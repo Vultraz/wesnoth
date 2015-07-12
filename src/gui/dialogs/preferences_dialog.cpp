@@ -81,14 +81,14 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	// We need to establish callbacks before selecting the initial page,
 	// otherwise widgets from other pages cannot be found afterwards.
 	//
-
+#if 0
 	tbutton& test_button = find_widget<tbutton>(&window, "button1", false);
 
 	connect_signal_mouse_left_click(
 				test_button,
 				boost::bind(&tpreferences::button_test_callback,
 							this));
-
+#endif
 	assert(selector.get_item_count() == pager.get_layer_count());
 
 	selector.select_row(0);
