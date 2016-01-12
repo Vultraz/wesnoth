@@ -68,6 +68,15 @@ private:
 	void fullscreen_toggle_callback(twindow& window);
 	void show_video_mode_dialog();
 
+	void simple_button_setup(
+		  const std::string& widget_id
+		, const bool start_value
+		, void (*callback) (bool)
+		, twindow& window);
+
+	void simple_toggle_callback(const std::string& widget,
+			void (*setter) (bool), twindow& window);
+
 	void sound_panel_toggle_callback(const std::string& widget_suffix,
 			bool (*setter) (bool), twindow& window);
 	void sound_panel_slider_callback(const std::string& widget_suffix,

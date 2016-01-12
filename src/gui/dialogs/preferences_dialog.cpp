@@ -16,8 +16,9 @@
 
 #include "gui/dialogs/preferences_dialog.hpp"
 
+#include "game_preferences.hpp"
 #include "preferences.hpp"
-//#include "preferences_display.hpp"
+#include "preferences_display.hpp"
 #include "formatter.hpp"
 #include "video.hpp"
 
@@ -52,11 +53,43 @@ namespace {
 
 namespace gui2 {
 
+using namespace preferences;
+
 REGISTER_DIALOG(preferences)
 
 tpreferences::tpreferences(display* disp) :
 	 disp_(disp)
 {
+}
+
+/**
+ * Small helper function to display stored resolution
+ */
+static void set_res_string(twindow& window)
+{
+	std::stringstream res;
+	res << resolution().first << " x " << resolution().second;
+	find_widget<tscroll_label>(&window, "resolution", false).set_label(res.str());
+}
+
+/**
+ * Sets the initial state and callback for a simple bool-state toggle button
+ */
+void tpreferences::simple_button_setup(
+		  const std::string& widget_id
+		, const bool start_value
+		, void (*callback) (bool)
+		, twindow& window)
+{
+	ttoggle_button& widget =
+		find_widget<ttoggle_button>(&window, widget_id, false);
+
+	widget.set_value(start_value);
+
+	connect_signal_mouse_left_click(widget, boost::bind(
+		  &tpreferences::simple_toggle_callback
+		, this, widget_id
+		, callback, boost::ref(window)));
 }
 
 /**
@@ -68,29 +101,53 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	 * DISPLAY PANEL
 	 */
 
-	/************ FULLSCREEN TOGGLE ************/
+	/** FULLSCREEN TOGGLE **/
 	ttoggle_button& toggle_fullscreen =
 			find_widget<ttoggle_button>(&window, "fullscreen", false);
 
-	toggle_fullscreen.set_value(preferences::fullscreen());
+	toggle_fullscreen.set_value(fullscreen());
 
-	connect_signal_mouse_left_click(
-			toggle_fullscreen,
-			boost::bind(&tpreferences::fullscreen_toggle_callback,
-			this, boost::ref(window)));
+	// We bind a special callback function, so simple_button_setup() is not used
+	connect_signal_mouse_left_click(toggle_fullscreen, boost::bind(
+			  &tpreferences::fullscreen_toggle_callback
+			, this, boost::ref(window)));
 
-	/************ RESOLUTION LABEL ************/
-	std::stringstream res;
-	res << preferences::resolution().first << " x " <<
-		   preferences::resolution().second;
+	/** RESOLUTION LABEL **/
+	set_res_string(window);
 
-	find_widget<tscroll_label>(&window, "resolution", false).set_label(
-			res.str());
-
-	/************ SET RESOLUTION BUTTON ************/
+	/** SET RESOLUTION BUTTON **/
 	connect_signal_mouse_left_click(
 			find_widget<tbutton>(&window, "resolution_set", false),
 			boost::bind(&tpreferences::show_video_mode_dialog, this));
+
+	/** SHOW FLOATING LABELS **/
+	simple_button_setup("show_floating_labels", 
+		show_floating_labels(), set_show_floating_labels, window);
+
+	/** SHOW HALOES **/
+	simple_button_setup("show_halos", 
+		show_haloes(), set_show_haloes, window);
+
+	/** SHOW TEAM COLORS **/
+	simple_button_setup("show_ellipses",
+		show_side_colors(), set_show_side_colors, window);
+
+	/** SHOW GRID **/
+	simple_button_setup("show_grid", 
+		grid(), set_grid, window);
+
+	/** ANIMATE MAP **/
+	simple_button_setup("animate_terrains", 
+		show_haloes(), set_show_haloes, window);
+
+	/** SHOW UNIT STANDING ANIMS **/
+	simple_button_setup("animate_units_standing", 
+		show_standing_animations(), set_show_standing_animations, window);
+
+	/** SHOW UNIT IDLE ANIMS **/
+	//simple_button_setup("animate_units_idle", 
+	//	show_haloes(), set_show_haloes, window);
+
 
 	/**
 	 * SOUND PANEL
@@ -102,19 +159,19 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	tslider& sfx_volume =
 			find_widget<tslider>(&window, "sound_volume_sfx", false);
 
-	sfx_toggle.set_value(preferences::sound_on());
-	sfx_volume.set_value(preferences::sound_volume());
-	sfx_volume.set_active(preferences::sound_on());
+	sfx_toggle.set_value(sound_on());
+	sfx_volume.set_value(sound_volume());
+	sfx_volume.set_active(sound_on());
 
 	connect_signal_mouse_left_click(sfx_toggle, boost::bind(
 			  &tpreferences::sound_panel_toggle_callback
 			, this, "sfx"
-			, preferences::set_sound, boost::ref(window)));
+			, set_sound, boost::ref(window)));
 
 	connect_signal_notify_modified(sfx_volume, boost::bind(
 			  &tpreferences::sound_panel_slider_callback
 			, this, "sfx"
-			, preferences::set_sound_volume, boost::ref(window)));
+			, set_sound_volume, boost::ref(window)));
 
 	/************ MUSIC ************/
 	ttoggle_button& music_toggle =
@@ -122,19 +179,19 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	tslider& music_volume =
 			find_widget<tslider>(&window, "sound_volume_music", false);
 
-	music_toggle.set_value(preferences::music_on());
-	music_volume.set_value(preferences::music_volume());
-	music_volume.set_active(preferences::music_on());
+	music_toggle.set_value(music_on());
+	music_volume.set_value(preferences::music_volume()); // Specify namespace explicitly
+	music_volume.set_active(music_on());
 
 	connect_signal_mouse_left_click(music_toggle, boost::bind(
 			  &tpreferences::sound_panel_toggle_callback
 			, this, "music"
-			, preferences::set_music, boost::ref(window)));
+			, set_music, boost::ref(window)));
 
 	connect_signal_notify_modified(music_volume, boost::bind(
 			  &tpreferences::sound_panel_slider_callback
 			, this, "music"
-			, preferences::set_music_volume, boost::ref(window)));
+			, set_music_volume, boost::ref(window)));
 
 	/************ TURN BELL ************/
 	ttoggle_button& turn_bell_toggle =
@@ -142,19 +199,19 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	tslider& turn_bell_volume =
 			find_widget<tslider>(&window, "sound_volume_bell", false);
 
-	turn_bell_toggle.set_value(preferences::turn_bell());
-	turn_bell_volume.set_value(preferences::bell_volume());
-	turn_bell_volume.set_active(preferences::turn_bell());
+	turn_bell_toggle.set_value(turn_bell());
+	turn_bell_volume.set_value(bell_volume());
+	turn_bell_volume.set_active(turn_bell());
 
 	connect_signal_mouse_left_click(turn_bell_toggle, boost::bind(
 			  &tpreferences::sound_panel_toggle_callback
 			, this, "bell"
-			, preferences::set_turn_bell, boost::ref(window)));
+			, set_turn_bell, boost::ref(window)));
 
 	connect_signal_notify_modified(turn_bell_volume, boost::bind(
 			  &tpreferences::sound_panel_slider_callback
 			, this, "bell"
-			, preferences::set_bell_volume, boost::ref(window)));
+			, set_bell_volume, boost::ref(window)));
 
 	/************ UI FX ************/
 	ttoggle_button& uisfx_toggle =
@@ -162,26 +219,26 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	tslider& uisfx_volume =
 			find_widget<tslider>(&window, "sound_volume_uisfx", false);
 
-	uisfx_toggle.set_value(preferences::UI_sound_on());
-	uisfx_volume.set_value(preferences::UI_volume());
-	uisfx_volume.set_active(preferences::UI_sound_on());
+	uisfx_toggle.set_value(UI_sound_on());
+	uisfx_volume.set_value(UI_volume());
+	uisfx_volume.set_active(UI_sound_on());
 
 	connect_signal_mouse_left_click(uisfx_toggle, boost::bind(
 			  &tpreferences::sound_panel_toggle_callback
 			, this, "uisfx"
-			, preferences::set_UI_sound, boost::ref(window)));
+			, set_UI_sound, boost::ref(window)));
 
 	connect_signal_notify_modified(uisfx_volume, boost::bind(
 			  &tpreferences::sound_panel_slider_callback
 			, this, "uisfx"
-			, preferences::set_UI_volume, boost::ref(window)));
+			, set_UI_volume, boost::ref(window)));
 
 #if 0
 	tbutton& test_button = find_widget<tbutton>(&window, "button1", false);
 
 	connect_signal_mouse_left_click(
 			test_button,
-			boost::bind(&tpreferences::button_test_callback,
+			boost::bind(&tbutton_test_callback,
 			this));
 #endif
 }
@@ -247,6 +304,7 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 	const bool ison =
 		find_widget<ttoggle_button>(&window, "fullscreen", false).get_value_bool();
 	disp_->video().set_fullscreen(ison);
+	set_res_string(window);
 }
 
 /** SET RESOLUTION **/
@@ -302,6 +360,12 @@ void tpreferences::show_video_mode_dialog()
 	if (disp_->get_singleton()) {
 		disp_->get_singleton()->video().set_resolution(resolutions[static_cast<size_t>(choice)]);
 	}
+}
+
+void tpreferences::simple_toggle_callback(const std::string& widget,
+		void (*setter) (bool), twindow& window)
+{
+	setter(find_widget<ttoggle_button>(&window, widget, false).get_value_bool());
 }
 
 /**
