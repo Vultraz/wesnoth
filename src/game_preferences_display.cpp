@@ -1687,7 +1687,7 @@ void preferences_dialog::set_selection(int index)
 void show_preferences_dialog(CVideo& video, const config& game_cfg)
 {
 	if(true/*gui2::new_widgets*/) {
-		gui2::tpreferences dlg;
+		gui2::tpreferences dlg(&disp);
 		dlg.show(disp.video());
 		return;
 	}
