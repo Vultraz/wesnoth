@@ -67,11 +67,9 @@ private:
 
 	void fullscreen_toggle_callback(twindow& window);
 	void show_video_mode_dialog();
-	
-	void sfx_toggle_callback(twindow& window);
-	void music_toggle_callback(twindow& window);
-	void turn_bell_toggle_callback(twindow& window);
-	void ui_sfx_toggle_callback(twindow& window);
+
+	void sound_panel_toggle_callback(const std::string& widget_suffix, 
+			bool (*setter) (bool), twindow& window);
 
 	display* disp_;
 };

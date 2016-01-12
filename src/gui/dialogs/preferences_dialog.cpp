@@ -109,8 +109,8 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 
 	connect_signal_mouse_left_click(
 			sfx_toggle,
-			boost::bind(&tpreferences::sfx_toggle_callback,
-			this, boost::ref(window)));
+			boost::bind(&tpreferences::sound_panel_toggle_callback,
+			this, "sfx", preferences::set_sound, boost::ref(window)));
 
 	/************ MUSIC ************/
 	ttoggle_button& music_toggle =
@@ -124,8 +124,8 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 
 	connect_signal_mouse_left_click(
 			music_toggle,
-			boost::bind(&tpreferences::music_toggle_callback,
-			this, boost::ref(window)));
+			boost::bind(&tpreferences::sound_panel_toggle_callback,
+			this, "music", preferences::set_music, boost::ref(window)));
 
 	/************ TURN BELL ************/
 	ttoggle_button& turn_bell_toggle =
@@ -139,8 +139,8 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 
 	connect_signal_mouse_left_click(
 			turn_bell_toggle,
-			boost::bind(&tpreferences::turn_bell_toggle_callback,
-			this, boost::ref(window)));
+			boost::bind(&tpreferences::sound_panel_toggle_callback,
+			this, "bell", preferences::set_turn_bell, boost::ref(window)));
 
 	/************ UI FX ************/
 	ttoggle_button& uisfx_toggle =
@@ -154,8 +154,8 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 
 	connect_signal_mouse_left_click(
 			uisfx_toggle,
-			boost::bind(&tpreferences::ui_sfx_toggle_callback,
-			this, boost::ref(window)));
+			boost::bind(&tpreferences::sound_panel_toggle_callback,
+			this, "uisfx", preferences::set_UI_sound, boost::ref(window)));
 
 #if 0
 	tbutton& test_button = find_widget<tbutton>(&window, "button1", false);
@@ -288,40 +288,16 @@ void tpreferences::show_video_mode_dialog()
 /**
  * SOUND PANEL CALLBACKS
  */
-void tpreferences::sfx_toggle_callback(twindow& window)
+void tpreferences::sound_panel_toggle_callback(const std::string& widget_suffix,
+		bool (*setter) (bool), twindow& window)
 {
 	const bool ison =
-		find_widget<ttoggle_button>(&window, "sound_toggle_sfx", false).get_value_bool();
-	preferences::set_sound(ison);
+		find_widget<ttoggle_button>(&window, (
+		"sound_toggle_" + widget_suffix), false).get_value_bool();
+	setter(ison);
 
-	find_widget<tslider>(&window, "sound_volume_sfx", false).set_active(ison);
-}
-
-void tpreferences::music_toggle_callback(twindow& window)
-{
-	const bool ison =
-		find_widget<ttoggle_button>(&window, "sound_toggle_music", false).get_value_bool();
-	preferences::set_music(ison);
-
-	find_widget<tslider>(&window, "sound_volume_music", false).set_active(ison);
-}
-
-void tpreferences::turn_bell_toggle_callback(twindow& window)
-{
-	const bool ison =
-		find_widget<ttoggle_button>(&window, "sound_toggle_bell", false).get_value_bool();
-	preferences::set_turn_bell(ison);
-
-	find_widget<tslider>(&window, "sound_volume_bell", false).set_active(ison);
-}
-
-void tpreferences::ui_sfx_toggle_callback(twindow& window)
-{
-	const bool ison =
-		find_widget<ttoggle_button>(&window, "sound_toggle_uisfx", false).get_value_bool();
-	preferences::set_UI_sound(ison);
-
-	find_widget<tslider>(&window, "sound_volume_uisfx", false).set_active(ison);
+	find_widget<tslider>(&window, (
+		"sound_volume_" + widget_suffix), false).set_active(ison);
 }
 
 void tpreferences::button_test_callback()
