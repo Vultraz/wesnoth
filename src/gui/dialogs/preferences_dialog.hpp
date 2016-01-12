@@ -15,6 +15,7 @@
 #ifndef GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 #define GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 
+#include "display.hpp"
 #include "gui/dialogs/dialog.hpp"
 
 // This file is not named preferences.hpp in order -I conflicts with
@@ -29,7 +30,7 @@ public:
 	/**
 	 * Constructor.
 	 */
-	tpreferences();
+	tpreferences(display* disp = NULL);
 
 	/** The execute function -- see @ref tdialog for more information. */
 	//
@@ -54,6 +55,8 @@ private:
 	/** Inherited from tdialog. */
 	void post_show(twindow& window);
 
+	void initialize_states_and_callbacks(twindow& window);
+
 	void add_pager_row(class tlistbox& selector, const std::string& icon, const std::string& label);
 	void set_visible_page(twindow& window, unsigned int page);
 
@@ -61,6 +64,16 @@ private:
 	void on_page_select(twindow& window);
 
 	void button_test_callback();
+
+	void fullscreen_toggle_callback(twindow& window);
+	void show_video_mode_dialog();
+	
+	void sfx_toggle_callback(twindow& window);
+	void music_toggle_callback(twindow& window);
+	void turn_bell_toggle_callback(twindow& window);
+	void ui_sfx_toggle_callback(twindow& window);
+
+	display* disp_;
 };
 
 } // namespace gui2
