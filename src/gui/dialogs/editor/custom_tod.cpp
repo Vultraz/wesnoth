@@ -125,8 +125,7 @@ void tcustom_tod::select_file(const std::string& filename,
 		dn = dir;
 	}
 
-	int res = dialogs::show_file_chooser_dialog(
-			*display_, dn, _("Choose File"));
+	int res = dialogs::show_file_chooser_dialog(display_->video(), dn, _("Choose File"));
 	if(res == 0) {
 		if(va == "image") {
 			tods_[current_tod_].image = dn;
