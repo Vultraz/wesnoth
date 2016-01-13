@@ -15,7 +15,6 @@
 #ifndef GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 #define GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 
-#include "display.hpp"
 #include "gui/dialogs/dialog.hpp"
 
 // This file is not named preferences.hpp in order -I conflicts with
@@ -30,7 +29,7 @@ public:
 	/**
 	 * Constructor.
 	 */
-	tpreferences(display* disp = NULL);
+	tpreferences(CVideo& video);
 
 	/** The execute function -- see @ref tdialog for more information. */
 	//
@@ -41,7 +40,7 @@ public:
 	//
 	static bool execute(CVideo& video)
 	{
-		tpreferences().show(video);
+		tpreferences(video).show(video);
 		return true;
 	}
 
@@ -93,7 +92,7 @@ private:
 	void simple_slider_callback(const std::string& widget,
 		void (*setter) (int), twindow& window);
 
-	display* disp_;
+	CVideo& video_;
 };
 
 } // namespace gui2
