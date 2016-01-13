@@ -93,6 +93,38 @@ void tpreferences::simple_button_setup(
 }
 
 /**
+ * Sets the initial state and callback for a bool-state toggle button/slider pair
+ */
+void tpreferences::simple_button_slider_pair_setup(
+		  const std::string& toggle_widget
+		, const std::string& slider_widget
+		, const bool toggle_start_value
+		, const int slider_state_value
+		, bool (*toggle_callback) (bool)
+		, void (*slider_callback) (int)
+		, twindow& window)
+{
+	ttoggle_button& button =
+		find_widget<ttoggle_button>(&window, toggle_widget, false);
+	tslider& slider =
+		find_widget<tslider>(&window, slider_widget, false);
+
+	button.set_value(toggle_start_value);
+	slider.set_value(slider_state_value);
+	slider.set_active(toggle_start_value);
+
+	connect_signal_mouse_left_click(button, boost::bind(
+		  &tpreferences::simple_toggle_slider_callback
+		, this, toggle_widget, slider_widget
+		, toggle_callback, boost::ref(window)));
+
+	connect_signal_notify_modified(slider, boost::bind(
+		  &tpreferences::simple_slider_callback
+		, this, slider_widget
+		, slider_callback, boost::ref(window)));
+}
+
+/**
  * Sets up states and callbacks for each of the widgets
  */
 void tpreferences::initialize_states_and_callbacks(twindow& window)
@@ -121,11 +153,11 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 			boost::bind(&tpreferences::show_video_mode_dialog, this));
 
 	/** SHOW FLOATING LABELS **/
-	simple_button_setup("show_floating_labels", 
+	simple_button_setup("show_floating_labels",
 		show_floating_labels(), set_show_floating_labels, window);
 
 	/** SHOW HALOES **/
-	simple_button_setup("show_halos", 
+	simple_button_setup("show_halos",
 		show_haloes(), set_show_haloes, window);
 
 	/** SHOW TEAM COLORS **/
@@ -133,105 +165,49 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 		show_side_colors(), set_show_side_colors, window);
 
 	/** SHOW GRID **/
-	simple_button_setup("show_grid", 
+	simple_button_setup("show_grid",
 		grid(), set_grid, window);
 
 	/** ANIMATE MAP **/
-	simple_button_setup("animate_terrains", 
+	simple_button_setup("animate_terrains",
 		show_haloes(), set_show_haloes, window);
 
 	/** SHOW UNIT STANDING ANIMS **/
-	simple_button_setup("animate_units_standing", 
+	simple_button_setup("animate_units_standing",
 		show_standing_animations(), set_show_standing_animations, window);
 
 	/** SHOW UNIT IDLE ANIMS **/
-	//simple_button_setup("animate_units_idle", 
-	//	show_haloes(), set_show_haloes, window);
+	// TODO: FIX. simple_button_slider_pair_setup take an bool button bind
+	// function, but this is void.
+	//simple_button_slider_pair_setup("animate_units_idle", "idle_anim_frequency",
+	//	sound_on(), sound_volume(),
+	//	set_idle_anim, set_idle_anim_rate, window);
 
 
 	/**
 	 * SOUND PANEL
 	 */
 
-	/*********** SOUND FX ************/
-	ttoggle_button& sfx_toggle =
-			find_widget<ttoggle_button>(&window, "sound_toggle_sfx", false);
-	tslider& sfx_volume =
-			find_widget<tslider>(&window, "sound_volume_sfx", false);
+	/** SOUND FX **/
+	simple_button_slider_pair_setup("sound_toggle_sfx", "sound_volume_sfx",
+		sound_on(), sound_volume(),
+		set_sound, set_sound_volume, window);
 
-	sfx_toggle.set_value(sound_on());
-	sfx_volume.set_value(sound_volume());
-	sfx_volume.set_active(sound_on());
+	/** MUSIC **/
+	simple_button_slider_pair_setup("sound_toggle_music", "sound_volume_music",
+		music_on(), music_volume(),
+		set_music, set_music_volume, window);
 
-	connect_signal_mouse_left_click(sfx_toggle, boost::bind(
-			  &tpreferences::sound_panel_toggle_callback
-			, this, "sfx"
-			, set_sound, boost::ref(window)));
+	/** TURN BELL **/
+	simple_button_slider_pair_setup("sound_toggle_bell", "sound_volume_bell",
+		turn_bell(), bell_volume(),
+		set_turn_bell, set_bell_volume, window);
 
-	connect_signal_notify_modified(sfx_volume, boost::bind(
-			  &tpreferences::sound_panel_slider_callback
-			, this, "sfx"
-			, set_sound_volume, boost::ref(window)));
+	/** UI FX **/
+	simple_button_slider_pair_setup("sound_toggle_uisfx", "sound_volume_uisfx",
+		UI_sound_on(), UI_volume(),
+		set_UI_sound, set_UI_volume, window);
 
-	/************ MUSIC ************/
-	ttoggle_button& music_toggle =
-			find_widget<ttoggle_button>(&window, "sound_toggle_music", false);
-	tslider& music_volume =
-			find_widget<tslider>(&window, "sound_volume_music", false);
-
-	music_toggle.set_value(music_on());
-	music_volume.set_value(preferences::music_volume()); // Specify namespace explicitly
-	music_volume.set_active(music_on());
-
-	connect_signal_mouse_left_click(music_toggle, boost::bind(
-			  &tpreferences::sound_panel_toggle_callback
-			, this, "music"
-			, set_music, boost::ref(window)));
-
-	connect_signal_notify_modified(music_volume, boost::bind(
-			  &tpreferences::sound_panel_slider_callback
-			, this, "music"
-			, set_music_volume, boost::ref(window)));
-
-	/************ TURN BELL ************/
-	ttoggle_button& turn_bell_toggle =
-			find_widget<ttoggle_button>(&window, "sound_toggle_bell", false);
-	tslider& turn_bell_volume =
-			find_widget<tslider>(&window, "sound_volume_bell", false);
-
-	turn_bell_toggle.set_value(turn_bell());
-	turn_bell_volume.set_value(bell_volume());
-	turn_bell_volume.set_active(turn_bell());
-
-	connect_signal_mouse_left_click(turn_bell_toggle, boost::bind(
-			  &tpreferences::sound_panel_toggle_callback
-			, this, "bell"
-			, set_turn_bell, boost::ref(window)));
-
-	connect_signal_notify_modified(turn_bell_volume, boost::bind(
-			  &tpreferences::sound_panel_slider_callback
-			, this, "bell"
-			, set_bell_volume, boost::ref(window)));
-
-	/************ UI FX ************/
-	ttoggle_button& uisfx_toggle =
-			find_widget<ttoggle_button>(&window, "sound_toggle_uisfx", false);
-	tslider& uisfx_volume =
-			find_widget<tslider>(&window, "sound_volume_uisfx", false);
-
-	uisfx_toggle.set_value(UI_sound_on());
-	uisfx_volume.set_value(UI_volume());
-	uisfx_volume.set_active(UI_sound_on());
-
-	connect_signal_mouse_left_click(uisfx_toggle, boost::bind(
-			  &tpreferences::sound_panel_toggle_callback
-			, this, "uisfx"
-			, set_UI_sound, boost::ref(window)));
-
-	connect_signal_notify_modified(uisfx_volume, boost::bind(
-			  &tpreferences::sound_panel_slider_callback
-			, this, "uisfx"
-			, set_UI_volume, boost::ref(window)));
 
 #if 0
 	tbutton& test_button = find_widget<tbutton>(&window, "button1", false);
@@ -292,7 +268,43 @@ void tpreferences::set_visible_page(twindow& window, unsigned int page)
 	pager.select_layer(page);
 }
 
-/** Callback functions. **/
+/**
+ * Generic callback functions
+ */
+
+/**
+ * Sets a simple toggle button callback
+ * The bool value of the widget is passeed to the setter
+ */
+void tpreferences::simple_toggle_callback(const std::string& widget,
+		void (*setter) (bool), twindow& window)
+{
+	setter(find_widget<ttoggle_button>(&window, widget, false).get_value_bool());
+}
+
+/**
+ * Sets a toggle button callback that also toggles a slider on/off
+ * The bool value of the widget is passeed to the setter
+ */
+void tpreferences::simple_toggle_slider_callback(const std::string& toggle_widget,
+		const std::string& slider_widget, bool (*setter) (bool), twindow& window)
+{
+	const bool ison = find_widget<ttoggle_button>(&window, toggle_widget, false).get_value_bool();
+	setter(ison);
+
+	find_widget<tslider>(&window, slider_widget, false).set_active(ison);
+}
+
+/**
+ * Sets a slider callback
+ * The int value of the widget is passeed to the setter
+ */
+void tpreferences::simple_slider_callback(const std::string& widget,
+		void (*setter) (int), twindow& window)
+{
+	const int value = find_widget<tslider>(&window, widget, false).get_value();
+	setter(value);
+}
 
 /**
  * DISPLAY PANEL CALLBACKS
@@ -360,34 +372,6 @@ void tpreferences::show_video_mode_dialog()
 	if (disp_->get_singleton()) {
 		disp_->get_singleton()->video().set_resolution(resolutions[static_cast<size_t>(choice)]);
 	}
-}
-
-void tpreferences::simple_toggle_callback(const std::string& widget,
-		void (*setter) (bool), twindow& window)
-{
-	setter(find_widget<ttoggle_button>(&window, widget, false).get_value_bool());
-}
-
-/**
- * SOUND PANEL CALLBACKS
- */
-void tpreferences::sound_panel_toggle_callback(const std::string& widget_suffix,
-		bool (*setter) (bool), twindow& window)
-{
-	const bool ison = find_widget<ttoggle_button>(&window, (
-		"sound_toggle_" + widget_suffix), false).get_value_bool();
-	setter(ison);
-
-	find_widget<tslider>(&window, (
-		"sound_volume_" + widget_suffix), false).set_active(ison);
-}
-
-void tpreferences::sound_panel_slider_callback(const std::string& widget_suffix,
-		void (*setter) (int), twindow& window)
-{
-	const int value = find_widget<tslider>(&window, (
-		"sound_volume_" + widget_suffix), false).get_value();
-	setter(value);
 }
 
 void tpreferences::button_test_callback()

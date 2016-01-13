@@ -74,13 +74,24 @@ private:
 		, void (*callback) (bool)
 		, twindow& window);
 
-	void simple_toggle_callback(const std::string& widget,
-			void (*setter) (bool), twindow& window);
+	void simple_button_slider_pair_setup(
+		  const std::string& toggle_widget
+		, const std::string& slider_widget
+		, const bool toggle_start_value
+		, const int slider_state_value
+		, bool (*toggle_callback) (bool)
+		, void (*slider_callback) (int)
+		, twindow& window);
 
-	void sound_panel_toggle_callback(const std::string& widget_suffix,
-			bool (*setter) (bool), twindow& window);
-	void sound_panel_slider_callback(const std::string& widget_suffix,
-			void (*setter) (int), twindow& window);
+	void simple_toggle_callback(const std::string& widget,
+		void (*setter) (bool), twindow& window);
+
+	void simple_toggle_slider_callback(const std::string& toggle_widget,
+		const std::string& slider_widget,
+		bool (*setter) (bool), twindow& window);
+
+	void simple_slider_callback(const std::string& widget,
+		void (*setter) (int), twindow& window);
 
 	display* disp_;
 };
