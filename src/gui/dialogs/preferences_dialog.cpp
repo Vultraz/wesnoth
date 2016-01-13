@@ -57,8 +57,8 @@ using namespace preferences;
 
 REGISTER_DIALOG(preferences)
 
-tpreferences::tpreferences(display* disp) :
-	 disp_(disp)
+tpreferences::tpreferences(CVideo& video) :
+	 video_(video)
 {
 }
 
@@ -315,7 +315,7 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 {
 	const bool ison =
 		find_widget<ttoggle_button>(&window, "fullscreen", false).get_value_bool();
-	disp_->video().set_fullscreen(ison);
+	video_.set_fullscreen(ison);
 	set_res_string(window);
 }
 
@@ -329,10 +329,10 @@ void tpreferences::show_video_mode_dialog()
 	//const events::event_context dialog_events_context;
 
 	std::vector<std::pair<int,int> > resolutions
-		= disp_->video().get_available_resolutions();
+		= video_.get_available_resolutions();
 
 	if(resolutions.empty()) {
-		gui2::show_transient_message(disp_->video() , "",
+		gui2::show_transient_message(video_ , "",
 			_("There are no alternative video modes available"));
 
 		return;
@@ -344,7 +344,7 @@ void tpreferences::show_video_mode_dialog()
 	for(size_t k = 0; k < resolutions.size(); ++k) {
 		std::pair<int, int> const& res = resolutions[k];
 
-		if (res == disp_->video().current_resolution())
+		if (res == video_.current_resolution())
 			current_choice = static_cast<unsigned>(k);
 
 		std::ostringstream option;
@@ -361,17 +361,15 @@ void tpreferences::show_video_mode_dialog()
 
 	gui2::tsimple_item_selector dlg(_("Choose Resolution"), "", options);
 	dlg.set_selected_index(current_choice);
-	dlg.show(disp_->video());
+	dlg.show(video_);
 
 	int choice = dlg.selected_index();
 
-	if(choice == -1 || resolutions[static_cast<size_t>(choice)] == disp_->video().current_resolution()) {
+	if(choice == -1 || resolutions[static_cast<size_t>(choice)] == video_.current_resolution()) {
 		return;
 	}
 
-	if (disp_->get_singleton()) {
-		disp_->get_singleton()->video().set_resolution(resolutions[static_cast<size_t>(choice)]);
-	}
+	video_.set_resolution(resolutions[static_cast<size_t>(choice)]);
 }
 
 void tpreferences::button_test_callback()
