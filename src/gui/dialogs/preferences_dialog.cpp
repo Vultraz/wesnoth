@@ -62,6 +62,14 @@ tpreferences::tpreferences(CVideo& video) :
 {
 }
 
+static std::string hacky_to_string_hack(int num)
+{
+	// FIXME: use std::to_string when we switch to C++11 - if that ever happens
+	std::stringstream hacky_to_string_hack;
+	hacky_to_string_hack << num;
+	return hacky_to_string_hack.str();
+}
+
 /**
  * Small helper function to display stored resolution
  */
@@ -125,10 +133,102 @@ void tpreferences::simple_button_slider_pair_setup(
 }
 
 /**
+ * Sets the initial state and callback for a standalone slider
+ */
+void tpreferences::simple_slider_setup(
+		  const std::string& widget_id
+		, const int start_value
+		, void (*callback) (int)
+		, twindow& window)
+{
+	tslider& widget = find_widget<tslider>(&window, widget_id, false);
+
+	widget.set_value(start_value);
+
+	connect_signal_notify_modified(widget, boost::bind(
+		  &tpreferences::simple_slider_callback
+		, this, widget_id
+		, callback, boost::ref(window)));
+}
+
+/**
+ * Sets the initial state and callback for a standalone slider
+ */
+void tpreferences::simple_slider_label_setup(
+		  const std::string& slider_widget
+		, const std::string& label_widget
+		, const int start_value
+		, void (*callback) (int)
+		, twindow& window)
+{
+	tslider& slider = find_widget<tslider>(&window, slider_widget, false);
+	tlabel& label = find_widget<tlabel>(&window, label_widget, false);
+
+	slider.set_value(start_value);
+	label.set_label(hacky_to_string_hack(start_value));
+
+	connect_signal_notify_modified(slider, boost::bind(
+		  &tpreferences::simple_slider_label_callback
+		, this, slider_widget, label_widget
+		, callback, boost::ref(window)));
+}
+
+/**
  * Sets up states and callbacks for each of the widgets
  */
 void tpreferences::initialize_states_and_callbacks(twindow& window)
 {
+	/**
+	 * GENERAL PANEL
+	 */
+
+	/** SCROLL SPEED **/
+	simple_slider_setup("scroll_speed",
+		scroll_speed(), set_scroll_speed, window);
+
+	/** ACCELERATED SPEED **/
+	// TODO: figure out how to deal with double-type values to int
+	//simple_button_slider_pair_setup("turbo_toggle", "turbo_slider",
+	//	turbo(), turbo_speed(),
+	//	set_turbo, set_turbo_speed, window);
+
+	/** SKIP AI MOVES **/
+	simple_button_setup("skip_ai_moves",
+		show_ai_moves(), set_show_ai_moves, window);
+
+	/** DISABLE AUTO MOVES **/
+	simple_button_setup("disable_auto_moves",
+		disable_auto_moves(), set_disable_auto_moves, window);
+
+	/** TURN DIALOG **/
+	simple_button_setup("show_turn_dialog",
+		turn_dialog(), set_turn_dialog, window);
+
+	/** ENABLE PLANNING MODE **/
+	simple_button_setup("whiteboard_on_start",
+		enable_whiteboard_mode_on_start(), set_enable_whiteboard_mode_on_start, window);
+
+	/** HIDE ALLY PLANS **/
+	simple_button_setup("whiteboard_hide_allies",
+		hide_whiteboard(), set_hide_whiteboard, window);
+
+	/** INTERRUPT ON SIGHTING **/
+	simple_button_setup("interrupt_move_when_ally_sighted",
+		interrupt_when_ally_sighted(), set_interrupt_when_ally_sighted, window);
+
+	/** SAVE REPLAYS **/
+	simple_button_setup("save_replays",
+		save_replays(), set_save_replays, window);
+
+	/** DELETE AUTOSAVES **/
+	simple_button_setup("delete_saves",
+		delete_saves(), set_delete_saves, window);
+
+	/** MAX AUTO SAVES **/
+	simple_slider_label_setup("max_saves_slider", "max_saves_value",
+		autosavemax(), set_autosavemax, window);
+
+
 	/**
 	 * DISPLAY PANEL
 	 */
@@ -300,8 +400,20 @@ void tpreferences::simple_toggle_slider_callback(const std::string& toggle_widge
 void tpreferences::simple_slider_callback(const std::string& widget,
 		void (*setter) (int), twindow& window)
 {
-	const int value = find_widget<tslider>(&window, widget, false).get_value();
+	setter(find_widget<tslider>(&window, widget, false).get_value());
+}
+
+/**
+ * Sets a slider callback that also sets a lable to the value of the slider
+ * The int value of the widget is passeed to the setter
+ */
+void tpreferences::simple_slider_label_callback(const std::string& slider_widget,
+		const std::string& label_widget, void (*setter) (int), twindow& window)
+{
+	const int value = find_widget<tslider>(&window, slider_widget, false).get_value();
 	setter(value);
+
+	find_widget<tlabel>(&window, label_widget, false).set_label(hacky_to_string_hack(value));
 }
 
 /**

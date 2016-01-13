@@ -82,6 +82,19 @@ private:
 		, void (*slider_callback) (int)
 		, twindow& window);
 
+	void simple_slider_setup(
+		  const std::string& widget_id
+		, const int start_value
+		, void (*callback) (int)
+		, twindow& window);
+
+	void simple_slider_label_setup(
+		  const std::string& slider_widget
+		, const std::string& label_widget
+		, const int start_value
+		, void (*callback) (int)
+		, twindow& window);
+
 	void simple_toggle_callback(const std::string& widget,
 		void (*setter) (bool), twindow& window);
 
@@ -91,6 +104,9 @@ private:
 
 	void simple_slider_callback(const std::string& widget,
 		void (*setter) (int), twindow& window);
+
+	void simple_slider_label_callback(const std::string& slider_widget,
+		const std::string& label_widget, void (*setter) (int), twindow& window);
 
 	CVideo& video_;
 };
