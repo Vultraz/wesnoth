@@ -171,6 +171,29 @@ void tpreferences::setup_slider_label_pair(
 }
 
 /**
+ * Sets the a radio button group
+ * Since (so far) there is only one group of these, I'm leaving the code specified.
+ * If (at a later date) I need to add more groups, this will have to be changed
+ */
+void tpreferences::setup_radio_toggle(
+		  const std::string& toggle_id
+		, LOBBY_JOINS enum_value
+		, int start_value
+		, std::vector<std::pair<ttoggle_button*, int> >& vec
+		, twindow& window)
+{
+	ttoggle_button* button = &find_widget<ttoggle_button>(&window, toggle_id, false);
+
+	button->set_value(enum_value == start_value);
+
+	connect_signal_mouse_left_click(*button, boost::bind(
+			&tpreferences::toggle_radio_callback, 
+			this, boost::ref(vec), boost::ref(start_value), button));
+
+	vec.push_back(std::make_pair(button, enum_value));
+}
+
+/**
  * Sets up states and callbacks for each of the widgets
  */
 void tpreferences::initialize_members(twindow& window)
@@ -366,6 +389,14 @@ void tpreferences::initialize_members(twindow& window)
 	setup_single_toggle("lobby_player_icons",
 		iconize_list(), _set_iconize_list, window);
 
+	/** LOBBY JOIN NOTIFICATIONS **/
+	setup_radio_toggle("lobby_joins_none", SHOW_NONE,
+		lobby_joins(), lobby_joins_, window); 
+	setup_radio_toggle("lobby_joins_friends", SHOW_FRIENDS,
+		lobby_joins(), lobby_joins_, window); 
+	setup_radio_toggle("lobby_joins_all", SHOW_ALL,
+		lobby_joins(), lobby_joins_, window); 
+
 	/** FRIENDS LIST **/
 	// TODO
 	//connect_signal_mouse_left_click(
@@ -485,11 +516,7 @@ void tpreferences::slider_label_pair_callback(const std::string& slider_widget,
 	find_widget<tlabel>(&window, label_widget, false).set_label(lexical_cast<std::string>(value));
 }
 
-/**
- * DISPLAY PANEL CALLBACKS
- */
-
-/** FULLSCREEN **/
+// Special fullsceen callback
 void tpreferences::fullscreen_toggle_callback(twindow& window)
 {
 	const bool ison =
@@ -497,6 +524,28 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 	video_.set_fullscreen(ison);
 	set_res_string(window);
 }
+
+void tpreferences::toggle_radio_callback(
+		  const std::vector<std::pair<ttoggle_button*, int> >& vec
+		, int& value
+		, ttoggle_button* active)
+{
+	FOREACH(const AUTO & e, vec)
+	{
+		ttoggle_button* const b = e.first;
+		if(b == NULL) {
+			continue;
+		} else if(b == active && !b->get_value()) {
+			b->set_value(true);
+		} else if(b == active) {
+			value = e.second;
+			_set_lobby_joins(value);
+		} else if(b != active && b->get_value()) {
+			b->set_value(false);
+		}
+	}
+}
+
 
 void tpreferences::on_page_select(twindow& window)
 {

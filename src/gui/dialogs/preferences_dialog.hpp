@@ -16,6 +16,7 @@
 #define GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 
 #include "gui/dialogs/dialog.hpp"
+#include "gui/widgets/toggle_button.hpp"
 
 // This file is not named preferences.hpp in order -I conflicts with
 // src/preferences.hpp.
@@ -105,6 +106,25 @@ private:
 	void slider_label_pair_callback(const std::string& slider_widget,
 		const std::string& label_widget, void (*setter) (int), twindow& window);
 
+	// FIXME: remove. It's a dupe of the one in game_preferences.hpp, but that
+	// is unnamed so I can't use it
+	enum LOBBY_JOINS { SHOW_NONE, SHOW_FRIENDS, SHOW_ALL };
+
+	typedef std::pair<ttoggle_button*, int> lobby_radio_toggle;
+	std::vector<lobby_radio_toggle> lobby_joins_;
+
+	void setup_radio_toggle(
+		  const std::string& toggle_id
+		, LOBBY_JOINS enum_value
+		, int start_value
+		, std::vector<std::pair<ttoggle_button*, int> >& vec
+		, twindow& window);
+
+	void toggle_radio_callback(
+		  const std::vector<std::pair<ttoggle_button*, int> >& vec
+		, int& value
+		, ttoggle_button* active);
+			
 	CVideo& video_;
 };
 
