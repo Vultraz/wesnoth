@@ -54,7 +54,7 @@ private:
 	/** Inherited from tdialog. */
 	void post_show(twindow& window);
 
-	void initialize_states_and_callbacks(twindow& window);
+	void initialize_members(twindow& window);
 
 	void add_pager_row(class tlistbox& selector, const std::string& icon, const std::string& label);
 	void set_visible_page(twindow& window, unsigned int page);
@@ -64,13 +64,13 @@ private:
 
 	void fullscreen_toggle_callback(twindow& window);
 
-	void simple_button_setup(
+	void setup_single_toggle(
 		  const std::string& widget_id
 		, const bool start_value
 		, void (*callback) (bool)
 		, twindow& window);
 
-	void simple_button_slider_pair_setup(
+	void setup_toggle_slider_pair(
 		  const std::string& toggle_widget
 		, const std::string& slider_widget
 		, const bool toggle_start_value
@@ -79,30 +79,30 @@ private:
 		, void (*slider_callback) (int)
 		, twindow& window);
 
-	void simple_slider_setup(
+	void setup_single_slider(
 		  const std::string& widget_id
 		, const int start_value
 		, void (*callback) (int)
 		, twindow& window);
 
-	void simple_slider_label_setup(
+	void setup_slider_label_pair(
 		  const std::string& slider_widget
 		, const std::string& label_widget
 		, const int start_value
 		, void (*callback) (int)
 		, twindow& window);
 
-	void simple_toggle_callback(const std::string& widget,
+	void single_toggle_callback(const std::string& widget,
 		void (*setter) (bool), twindow& window);
 
-	void simple_toggle_slider_callback(const std::string& toggle_widget,
+	void toggle_slider_pair_callback(const std::string& toggle_widget,
 		const std::string& slider_widget,
 		boost::function<void(bool)> setter, twindow& window);
 
-	void simple_slider_callback(const std::string& widget,
+	void single_slider_callback(const std::string& widget,
 		void (*setter) (int), twindow& window);
 
-	void simple_slider_label_callback(const std::string& slider_widget,
+	void slider_label_pair_callback(const std::string& slider_widget,
 		const std::string& label_widget, void (*setter) (int), twindow& window);
 
 	CVideo& video_;

@@ -80,7 +80,7 @@ static void set_res_string(twindow& window)
 /**
  * Sets the initial state and callback for a simple bool-state toggle button
  */
-void tpreferences::simple_button_setup(
+void tpreferences::setup_single_toggle(
 		  const std::string& widget_id
 		, const bool start_value
 		, void (*callback) (bool)
@@ -92,7 +92,7 @@ void tpreferences::simple_button_setup(
 	widget.set_value(start_value);
 
 	connect_signal_mouse_left_click(widget, boost::bind(
-		  &tpreferences::simple_toggle_callback
+		  &tpreferences::single_toggle_callback
 		, this, widget_id
 		, callback, boost::ref(window)));
 }
@@ -100,7 +100,7 @@ void tpreferences::simple_button_setup(
 /**
  * Sets the initial state and callback for a bool-state toggle button/slider pair
  */
-void tpreferences::simple_button_slider_pair_setup(
+void tpreferences::setup_toggle_slider_pair(
 		  const std::string& toggle_widget
 		, const std::string& slider_widget
 		, const bool toggle_start_value
@@ -119,12 +119,12 @@ void tpreferences::simple_button_slider_pair_setup(
 	slider.set_active(toggle_start_value);
 
 	connect_signal_mouse_left_click(button, boost::bind(
-		  &tpreferences::simple_toggle_slider_callback
+		  &tpreferences::toggle_slider_pair_callback
 		, this, toggle_widget, slider_widget
 		, toggle_callback, boost::ref(window)));
 
 	connect_signal_notify_modified(slider, boost::bind(
-		  &tpreferences::simple_slider_callback
+		  &tpreferences::single_slider_callback
 		, this, slider_widget
 		, slider_callback, boost::ref(window)));
 }
@@ -132,7 +132,7 @@ void tpreferences::simple_button_slider_pair_setup(
 /**
  * Sets the initial state and callback for a standalone slider
  */
-void tpreferences::simple_slider_setup(
+void tpreferences::setup_single_slider(
 		  const std::string& widget_id
 		, const int start_value
 		, void (*callback) (int)
@@ -143,7 +143,7 @@ void tpreferences::simple_slider_setup(
 	widget.set_value(start_value);
 
 	connect_signal_notify_modified(widget, boost::bind(
-		  &tpreferences::simple_slider_callback
+		  &tpreferences::single_slider_callback
 		, this, widget_id
 		, callback, boost::ref(window)));
 }
@@ -151,7 +151,7 @@ void tpreferences::simple_slider_setup(
 /**
  * Sets the initial state and callback for a standalone slider
  */
-void tpreferences::simple_slider_label_setup(
+void tpreferences::setup_slider_label_pair(
 		  const std::string& slider_widget
 		, const std::string& label_widget
 		, const int start_value
@@ -165,7 +165,7 @@ void tpreferences::simple_slider_label_setup(
 	label.set_label(lexical_cast<std::string>(start_value));
 
 	connect_signal_notify_modified(slider, boost::bind(
-		  &tpreferences::simple_slider_label_callback
+		  &tpreferences::slider_label_pair_callback
 		, this, slider_widget, label_widget
 		, callback, boost::ref(window)));
 }
@@ -173,56 +173,56 @@ void tpreferences::simple_slider_label_setup(
 /**
  * Sets up states and callbacks for each of the widgets
  */
-void tpreferences::initialize_states_and_callbacks(twindow& window)
+void tpreferences::initialize_members(twindow& window)
 {
 	/**
 	 * GENERAL PANEL
 	 */
 
 	/** SCROLL SPEED **/
-	simple_slider_setup("scroll_speed",
+	setup_single_slider("scroll_speed",
 		scroll_speed(), set_scroll_speed, window);
 
 	/** ACCELERATED SPEED **/
 	// TODO: figure out how to deal with double-type values to int
-	//simple_button_slider_pair_setup("turbo_toggle", "turbo_slider",
+	//setup_toggle_slider_pair("turbo_toggle", "turbo_slider",
 	//	turbo(), turbo_speed(),
 	//	set_turbo, set_turbo_speed, window);
 
 	/** SKIP AI MOVES **/
-	simple_button_setup("skip_ai_moves",
+	setup_single_toggle("skip_ai_moves",
 		show_ai_moves(), set_show_ai_moves, window);
 
 	/** DISABLE AUTO MOVES **/
-	simple_button_setup("disable_auto_moves",
+	setup_single_toggle("disable_auto_moves",
 		disable_auto_moves(), set_disable_auto_moves, window);
 
 	/** TURN DIALOG **/
-	simple_button_setup("show_turn_dialog",
+	setup_single_toggle("show_turn_dialog",
 		turn_dialog(), set_turn_dialog, window);
 
 	/** ENABLE PLANNING MODE **/
-	simple_button_setup("whiteboard_on_start",
+	setup_single_toggle("whiteboard_on_start",
 		enable_whiteboard_mode_on_start(), set_enable_whiteboard_mode_on_start, window);
 
 	/** HIDE ALLY PLANS **/
-	simple_button_setup("whiteboard_hide_allies",
+	setup_single_toggle("whiteboard_hide_allies",
 		hide_whiteboard(), set_hide_whiteboard, window);
 
 	/** INTERRUPT ON SIGHTING **/
-	simple_button_setup("interrupt_move_when_ally_sighted",
+	setup_single_toggle("interrupt_move_when_ally_sighted",
 		interrupt_when_ally_sighted(), set_interrupt_when_ally_sighted, window);
 
 	/** SAVE REPLAYS **/
-	simple_button_setup("save_replays",
+	setup_single_toggle("save_replays",
 		save_replays(), set_save_replays, window);
 
 	/** DELETE AUTOSAVES **/
-	simple_button_setup("delete_saves",
+	setup_single_toggle("delete_saves",
 		delete_saves(), set_delete_saves, window);
 
 	/** MAX AUTO SAVES **/
-	simple_slider_label_setup("max_saves_slider", "max_saves_value",
+	setup_slider_label_pair("max_saves_slider", "max_saves_value",
 		autosavemax(), set_autosavemax, window);
 
 	/** SET HOTKEYS **/
@@ -247,7 +247,7 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 
 	toggle_fullscreen.set_value(fullscreen());
 
-	// We bind a special callback function, so simple_button_setup() is not used
+	// We bind a special callback function, so setup_single_toggle() is not used
 	connect_signal_mouse_left_click(toggle_fullscreen, boost::bind(
 			  &tpreferences::fullscreen_toggle_callback
 			, this, boost::ref(window)));
@@ -262,31 +262,31 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 			, boost::ref(window.video())));
 
 	/** SHOW FLOATING LABELS **/
-	simple_button_setup("show_floating_labels",
+	setup_single_toggle("show_floating_labels",
 		show_floating_labels(), set_show_floating_labels, window);
 
 	/** SHOW HALOES **/
-	simple_button_setup("show_halos",
+	setup_single_toggle("show_halos",
 		show_haloes(), set_show_haloes, window);
 
 	/** SHOW TEAM COLORS **/
-	simple_button_setup("show_ellipses",
+	setup_single_toggle("show_ellipses",
 		show_side_colors(), set_show_side_colors, window);
 
 	/** SHOW GRID **/
-	simple_button_setup("show_grid",
+	setup_single_toggle("show_grid",
 		grid(), set_grid, window);
 
 	/** ANIMATE MAP **/
-	simple_button_setup("animate_terrains",
+	setup_single_toggle("animate_terrains",
 		show_haloes(), set_show_haloes, window);
 
 	/** SHOW UNIT STANDING ANIMS **/
-	simple_button_setup("animate_units_standing",
+	setup_single_toggle("animate_units_standing",
 		show_standing_animations(), set_show_standing_animations, window);
 
 	/** SHOW UNIT IDLE ANIMS **/
-	simple_button_slider_pair_setup("animate_units_idle", "idle_anim_frequency",
+	setup_toggle_slider_pair("animate_units_idle", "idle_anim_frequency",
 		sound_on(), sound_volume(),
 		set_idle_anim, set_idle_anim_rate, window);
 
@@ -315,22 +315,22 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	 */
 
 	/** SOUND FX **/
-	simple_button_slider_pair_setup("sound_toggle_sfx", "sound_volume_sfx",
+	setup_toggle_slider_pair("sound_toggle_sfx", "sound_volume_sfx",
 		sound_on(), sound_volume(),
 		set_sound, set_sound_volume, window);
 
 	/** MUSIC **/
-	simple_button_slider_pair_setup("sound_toggle_music", "sound_volume_music",
+	setup_toggle_slider_pair("sound_toggle_music", "sound_volume_music",
 		music_on(), music_volume(),
 		set_music, set_music_volume, window);
 
 	/** TURN BELL **/
-	simple_button_slider_pair_setup("sound_toggle_bell", "sound_volume_bell",
+	setup_toggle_slider_pair("sound_toggle_bell", "sound_volume_bell",
 		turn_bell(), bell_volume(),
 		set_turn_bell, set_bell_volume, window);
 
 	/** UI FX **/
-	simple_button_slider_pair_setup("sound_toggle_uisfx", "sound_volume_uisfx",
+	setup_toggle_slider_pair("sound_toggle_uisfx", "sound_volume_uisfx",
 		UI_sound_on(), UI_volume(),
 		set_UI_sound, set_UI_volume, window);
 
@@ -347,23 +347,23 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	 */
 
 	/** CHAT LINES **/
-	simple_slider_setup("chat_lines",
+	setup_single_slider("chat_lines",
 		chat_lines(), set_chat_lines, window);
 
 	/** CHAT TIMESTAMPPING **/
-	simple_button_setup("chat_timestamps",
+	setup_single_toggle("chat_timestamps",
 		chat_timestamping(), set_chat_timestamping, window);
 
 	/** SAVE PASSWORD **/
-	simple_button_setup("remember_password",
+	setup_single_toggle("remember_password",
 		remember_password(), set_remember_password, window);
 
 	/** SORT LOBBY LIST **/
-	simple_button_setup("lobby_sort_players",
+	setup_single_toggle("lobby_sort_players",
 		sort_list(), _set_sort_list, window);
 
 	/** ICONIZE LOBBY LIST **/
-	simple_button_setup("lobby_player_icons",
+	setup_single_toggle("lobby_player_icons",
 		iconize_list(), _set_iconize_list, window);
 
 	/** FRIENDS LIST **/
@@ -421,7 +421,7 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	// We need to establish callbacks before selecting the initial page,
 	// otherwise widgets from other pages cannot be found afterwards.
 	//
-	initialize_states_and_callbacks(window);
+	initialize_members(window);
 
 	assert(selector.get_item_count() == pager.get_layer_count());
 
@@ -443,7 +443,7 @@ void tpreferences::set_visible_page(twindow& window, unsigned int page)
  * Sets a simple toggle button callback
  * The bool value of the widget is passeed to the setter
  */
-void tpreferences::simple_toggle_callback(const std::string& widget,
+void tpreferences::single_toggle_callback(const std::string& widget,
 		void (*setter) (bool), twindow& window)
 {
 	setter(find_widget<ttoggle_button>(&window, widget, false).get_value_bool());
@@ -453,7 +453,7 @@ void tpreferences::simple_toggle_callback(const std::string& widget,
  * Sets a toggle button callback that also toggles a slider on/off
  * The bool value of the widget is passeed to the setter
  */
-void tpreferences::simple_toggle_slider_callback(const std::string& toggle_widget,
+void tpreferences::toggle_slider_pair_callback(const std::string& toggle_widget,
 		const std::string& slider_widget, boost::function<void(bool)> setter, twindow& window)
 {
 	const bool ison = find_widget<ttoggle_button>(&window, toggle_widget, false).get_value_bool();
@@ -466,7 +466,7 @@ void tpreferences::simple_toggle_slider_callback(const std::string& toggle_widge
  * Sets a slider callback
  * The int value of the widget is passeed to the setter
  */
-void tpreferences::simple_slider_callback(const std::string& widget,
+void tpreferences::single_slider_callback(const std::string& widget,
 		void (*setter) (int), twindow& window)
 {
 	setter(find_widget<tslider>(&window, widget, false).get_value());
@@ -476,7 +476,7 @@ void tpreferences::simple_slider_callback(const std::string& widget,
  * Sets a slider callback that also sets a lable to the value of the slider
  * The int value of the widget is passeed to the setter
  */
-void tpreferences::simple_slider_label_callback(const std::string& slider_widget,
+void tpreferences::slider_label_pair_callback(const std::string& slider_widget,
 		const std::string& label_widget, void (*setter) (int), twindow& window)
 {
 	const int value = find_widget<tslider>(&window, slider_widget, false).get_value();
