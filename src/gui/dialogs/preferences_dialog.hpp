@@ -62,8 +62,6 @@ private:
 	/** Callback for page selection changes. */
 	void on_page_select(twindow& window);
 
-	void button_test_callback();
-
 	void fullscreen_toggle_callback(twindow& window);
 	void show_video_mode_dialog();
 

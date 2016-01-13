@@ -305,16 +305,6 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	simple_button_slider_pair_setup("sound_toggle_uisfx", "sound_volume_uisfx",
 		UI_sound_on(), UI_volume(),
 		set_UI_sound, set_UI_volume, window);
-
-
-#if 0
-	tbutton& test_button = find_widget<tbutton>(&window, "button1", false);
-
-	connect_signal_mouse_left_click(
-			test_button,
-			boost::bind(&tbutton_test_callback,
-			this));
-#endif
 }
 
 void tpreferences::add_pager_row(tlistbox& selector, const std::string& icon, const std::string& label)
@@ -480,11 +470,6 @@ void tpreferences::show_video_mode_dialog()
 	}
 
 	video_.set_resolution(resolutions[static_cast<size_t>(choice)]);
-}
-
-void tpreferences::button_test_callback()
-{
-	std::cerr << "hi from button1\n";
 }
 
 void tpreferences::on_page_select(twindow& window)
