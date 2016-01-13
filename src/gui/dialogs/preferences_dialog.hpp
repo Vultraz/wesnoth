@@ -78,7 +78,7 @@ private:
 		, const std::string& slider_widget
 		, const bool toggle_start_value
 		, const int slider_state_value
-		, bool (*toggle_callback) (bool)
+		, boost::function<void(bool)> toggle_callback
 		, void (*slider_callback) (int)
 		, twindow& window);
 
@@ -87,7 +87,7 @@ private:
 
 	void simple_toggle_slider_callback(const std::string& toggle_widget,
 		const std::string& slider_widget,
-		bool (*setter) (bool), twindow& window);
+		boost::function<void(bool)> setter, twindow& window);
 
 	void simple_slider_callback(const std::string& widget,
 		void (*setter) (int), twindow& window);
