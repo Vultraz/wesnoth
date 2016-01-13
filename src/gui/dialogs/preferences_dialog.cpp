@@ -19,6 +19,7 @@
 #include "game_preferences.hpp"
 #include "preferences.hpp"
 #include "preferences_display.hpp"
+#include "lobby_preferences.hpp"
 #include "formatter.hpp"
 #include "video.hpp"
 
@@ -305,6 +306,31 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	simple_button_slider_pair_setup("sound_toggle_uisfx", "sound_volume_uisfx",
 		UI_sound_on(), UI_volume(),
 		set_UI_sound, set_UI_volume, window);
+
+
+	/**
+	 * MULTIPLAYER PANEL
+	 */
+
+	/** CHAT LINES **/
+	simple_slider_setup("chat_lines",
+		chat_lines(), set_chat_lines, window);
+
+	/** CHAT TIMESTAMPPING **/
+	simple_button_setup("chat_timestamps",
+		chat_timestamping(), set_chat_timestamping, window);
+
+	/** SAVE PASSWORD **/
+	simple_button_setup("remember_password",
+		remember_password(), set_remember_password, window);
+
+	/** SORT LOBBY LIST **/
+	simple_button_setup("lobby_sort_players",
+		sort_list(), _set_sort_list, window);
+
+	/** ICONIZE LOBBY LIST **/
+	simple_button_setup("lobby_player_icons",
+		iconize_list(), _set_iconize_list, window);
 }
 
 void tpreferences::add_pager_row(tlistbox& selector, const std::string& icon, const std::string& label)
