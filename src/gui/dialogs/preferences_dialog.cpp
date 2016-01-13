@@ -100,7 +100,7 @@ void tpreferences::simple_button_slider_pair_setup(
 		, const std::string& slider_widget
 		, const bool toggle_start_value
 		, const int slider_state_value
-		, bool (*toggle_callback) (bool)
+		, boost::function<void(bool)> toggle_callback
 		, void (*slider_callback) (int)
 		, twindow& window)
 {
@@ -177,11 +177,9 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 		show_standing_animations(), set_show_standing_animations, window);
 
 	/** SHOW UNIT IDLE ANIMS **/
-	// TODO: FIX. simple_button_slider_pair_setup take an bool button bind
-	// function, but this is void.
-	//simple_button_slider_pair_setup("animate_units_idle", "idle_anim_frequency",
-	//	sound_on(), sound_volume(),
-	//	set_idle_anim, set_idle_anim_rate, window);
+	simple_button_slider_pair_setup("animate_units_idle", "idle_anim_frequency",
+		sound_on(), sound_volume(),
+		set_idle_anim, set_idle_anim_rate, window);
 
 
 	/**
@@ -287,7 +285,7 @@ void tpreferences::simple_toggle_callback(const std::string& widget,
  * The bool value of the widget is passeed to the setter
  */
 void tpreferences::simple_toggle_slider_callback(const std::string& toggle_widget,
-		const std::string& slider_widget, bool (*setter) (bool), twindow& window)
+		const std::string& slider_widget, boost::function<void(bool)> setter, twindow& window)
 {
 	const bool ison = find_widget<ttoggle_button>(&window, toggle_widget, false).get_value_bool();
 	setter(ison);
