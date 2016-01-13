@@ -63,22 +63,15 @@ tpreferences::tpreferences(CVideo& video) :
 {
 }
 
-static std::string hacky_to_string_hack(int num)
-{
-	// FIXME: use std::to_string when we switch to C++11 - if that ever happens
-	std::stringstream hacky_to_string_hack;
-	hacky_to_string_hack << num;
-	return hacky_to_string_hack.str();
-}
-
 /**
  * Small helper function to display stored resolution
  */
 static void set_res_string(twindow& window)
 {
-	std::stringstream res;
-	res << resolution().first << " x " << resolution().second;
-	find_widget<tscroll_label>(&window, "resolution", false).set_label(res.str());
+	const std::string& res =
+		lexical_cast<std::string>(resolution().first) + " x " + 
+		lexical_cast<std::string>(resolution().second);
+	find_widget<tscroll_label>(&window, "resolution", false).set_label(res);
 }
 
 /**
@@ -166,7 +159,7 @@ void tpreferences::simple_slider_label_setup(
 	tlabel& label = find_widget<tlabel>(&window, label_widget, false);
 
 	slider.set_value(start_value);
-	label.set_label(hacky_to_string_hack(start_value));
+	label.set_label(lexical_cast<std::string>(start_value));
 
 	connect_signal_notify_modified(slider, boost::bind(
 		  &tpreferences::simple_slider_label_callback
@@ -429,7 +422,7 @@ void tpreferences::simple_slider_label_callback(const std::string& slider_widget
 	const int value = find_widget<tslider>(&window, slider_widget, false).get_value();
 	setter(value);
 
-	find_widget<tlabel>(&window, label_widget, false).set_label(hacky_to_string_hack(value));
+	find_widget<tlabel>(&window, label_widget, false).set_label(lexical_cast<std::string>(value));
 }
 
 /**
