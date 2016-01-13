@@ -63,7 +63,6 @@ private:
 	void on_page_select(twindow& window);
 
 	void fullscreen_toggle_callback(twindow& window);
-	void show_video_mode_dialog();
 
 	void simple_button_setup(
 		  const std::string& widget_id

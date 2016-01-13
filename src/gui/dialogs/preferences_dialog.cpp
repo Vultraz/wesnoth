@@ -24,7 +24,10 @@
 #include "video.hpp"
 
 #include "gui/auxiliary/find_widget.tpp"
+#include "gui/dialogs/advanced_graphics_options.hpp"
+#include "gui/dialogs/game_cache_options.hpp"
 #include "gui/dialogs/helper.hpp"
+#include "gui/dialogs/mp_alerts_options.hpp"
 #include "gui/dialogs/simple_item_selector.hpp"
 #include "gui/dialogs/transient_message.hpp"
 #include "gui/widgets/button.hpp"
@@ -222,6 +225,17 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	simple_slider_label_setup("max_saves_slider", "max_saves_value",
 		autosavemax(), set_autosavemax, window);
 
+	/** SET HOTKEYS **/
+	connect_signal_mouse_left_click(
+			  find_widget<tbutton>(&window, "hotkeys", false)
+			, boost::bind(&preferences::show_hotkeys_preferences_dialog
+			, boost::ref(window.video())));
+
+	/** CACHE MANAGE **/
+	connect_signal_mouse_left_click(
+			  find_widget<tbutton>(&window, "cachemg", false)
+			, boost::bind(&gui2::tgame_cache_options::display
+			, boost::ref(window.video())));
 
 	/**
 	 * DISPLAY PANEL
@@ -241,10 +255,11 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	/** RESOLUTION LABEL **/
 	set_res_string(window);
 
-	/** SET RESOLUTION BUTTON **/
+	/** SET RESOLUTION **/
 	connect_signal_mouse_left_click(
-			find_widget<tbutton>(&window, "resolution_set", false),
-			boost::bind(&tpreferences::show_video_mode_dialog, this));
+			  find_widget<tbutton>(&window, "resolution_set", false)
+			, boost::bind(&preferences::show_video_mode_dialog
+			, boost::ref(window.video())));
 
 	/** SHOW FLOATING LABELS **/
 	simple_button_setup("show_floating_labels",
@@ -275,6 +290,25 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 		sound_on(), sound_volume(),
 		set_idle_anim, set_idle_anim_rate, window);
 
+	/** SELECT THEME **/
+	connect_signal_mouse_left_click(
+			  find_widget<tbutton>(&window, "choose_theme", false)
+			, boost::bind(&preferences::show_theme_dialog
+			, boost::ref(window.video())));
+
+	/** ORB COLORS **/
+	// TODO
+	//connect_signal_mouse_left_click(
+	//		  find_widget<tbutton>(&window, "orbs_setup", false)
+	//		, boost::bind(&preferences::show_theme_dialog
+	//		, boost::ref(window.video())));
+
+	/** ADVANCED DISPLAY OPTIONS **/
+	connect_signal_mouse_left_click(
+			  find_widget<tbutton>(&window, "disp_advanced", false)
+			, boost::bind(&gui2::tadvanced_graphics_options::display
+			, boost::ref(window.video())));
+
 
 	/**
 	 * SOUND PANEL
@@ -300,6 +334,13 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 		UI_sound_on(), UI_volume(),
 		set_UI_sound, set_UI_volume, window);
 
+	/** ADVANCED SOUND OPTIONS **/
+	// TODO
+	//connect_signal_mouse_left_click(
+	//		  find_widget<tbutton>(&window, "sound_advanced", false)
+	//		, boost::bind(&gui2::tadvanced_graphics_options::display
+	//		, boost::ref(window.video())));
+
 
 	/**
 	 * MULTIPLAYER PANEL
@@ -324,6 +365,25 @@ void tpreferences::initialize_states_and_callbacks(twindow& window)
 	/** ICONIZE LOBBY LIST **/
 	simple_button_setup("lobby_player_icons",
 		iconize_list(), _set_iconize_list, window);
+
+	/** FRIENDS LIST **/
+	// TODO
+	//connect_signal_mouse_left_click(
+	//		  find_widget<tbutton>(&window, "mp_friends", false)
+	//		, boost::bind(&gui2::tadvanced_graphics_options::display
+	//		, boost::ref(window.video())));
+	
+	/** ALERTS **/
+	connect_signal_mouse_left_click(
+			  find_widget<tbutton>(&window, "mp_alerts", false)
+			, boost::bind(&gui2::tmp_alerts_options::display
+			, boost::ref(window.video())));
+
+	/** SET WESNOTHD PATH **/
+	connect_signal_mouse_left_click(
+			  find_widget<tbutton>(&window, "mp_wesnothd", false)
+			, boost::bind(&preferences::show_wesnothd_server_search
+			, boost::ref(window.video())));
 }
 
 void tpreferences::add_pager_row(tlistbox& selector, const std::string& icon, const std::string& label)
@@ -436,59 +496,6 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 		find_widget<ttoggle_button>(&window, "fullscreen", false).get_value_bool();
 	video_.set_fullscreen(ison);
 	set_res_string(window);
-}
-
-/** SET RESOLUTION **/
-// TODO: not having the implementation of this function here results
-// in the dialog not opening at all, possibly because of different display
-// instances. Determine cause and if to remove.
-void tpreferences::show_video_mode_dialog()
-{
-	//const resize_lock prevent_resizing;
-	//const events::event_context dialog_events_context;
-
-	std::vector<std::pair<int,int> > resolutions
-		= video_.get_available_resolutions();
-
-	if(resolutions.empty()) {
-		gui2::show_transient_message(video_ , "",
-			_("There are no alternative video modes available"));
-
-		return;
-	}
-
-	std::vector<std::string> options;
-	unsigned current_choice = 0;
-
-	for(size_t k = 0; k < resolutions.size(); ++k) {
-		std::pair<int, int> const& res = resolutions[k];
-
-		if (res == video_.current_resolution())
-			current_choice = static_cast<unsigned>(k);
-
-		std::ostringstream option;
-		option << res.first << utils::unicode_multiplication_sign << res.second;
-		const int div = boost::math::gcd(res.first, res.second);
-		const int ratio[2] = {res.first/div, res.second/div};
-
-		if (ratio[0] <= 10 || ratio[1] <= 10) {
-			option << " (" << ratio[0] << ':' << ratio[1] << ')';
-		}
-
-		options.push_back(option.str());
-	}
-
-	gui2::tsimple_item_selector dlg(_("Choose Resolution"), "", options);
-	dlg.set_selected_index(current_choice);
-	dlg.show(video_);
-
-	int choice = dlg.selected_index();
-
-	if(choice == -1 || resolutions[static_cast<size_t>(choice)] == video_.current_resolution()) {
-		return;
-	}
-
-	video_.set_resolution(resolutions[static_cast<size_t>(choice)]);
 }
 
 void tpreferences::on_page_select(twindow& window)
