@@ -64,6 +64,7 @@ private:
 	void on_page_select(twindow& window);
 
 	void fullscreen_toggle_callback(twindow& window);
+	void accl_speed_slider_callback(twindow& window);
 
 	void setup_single_toggle(
 		  const std::string& widget_id
