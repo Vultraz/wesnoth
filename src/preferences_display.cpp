@@ -122,14 +122,11 @@ bool show_video_mode_dialog(CVideo& video)
 	// For some reason, this line prevents the dialog from being opened from GUI2...
 	//const events::event_context dialog_events_context;
 
-	std::vector<std::pair<int,int> > resolutions
-			= video.get_available_resolutions();
+	std::vector<std::pair<int,int> > resolutions = video.get_available_resolutions();
 
-	if(resolutions.empty()) {
-		gui2::show_transient_message(
-				video
-				, ""
-				, _("There are no alternative video modes available"));
+	if (resolutions.empty()) {
+		gui2::show_transient_message(video, "", 
+			_("There are no alternative video modes available"));
 
 		return false;
 	}
@@ -137,18 +134,23 @@ bool show_video_mode_dialog(CVideo& video)
 	std::vector<std::string> options;
 	unsigned current_choice = 0;
 
-	for(size_t k = 0; k < resolutions.size(); ++k) {
+	for (size_t k = 0; k < resolutions.size(); ++k) {
 		std::pair<int, int> const& res = resolutions[k];
 
-		if (res == video.current_resolution())
+		if (res == video.current_resolution()) {
 			current_choice = static_cast<unsigned>(k);
+		}
 
 		std::ostringstream option;
 		option << res.first << utils::unicode_multiplication_sign << res.second;
+
 		const int div = boost::math::gcd(res.first, res.second);
 		const int ratio[2] = {res.first/div, res.second/div};
-		if (ratio[0] <= 10 || ratio[1] <= 10)
-			option << " (" << ratio[0] << ':' << ratio[1] << ')';
+		if (ratio[0] <= 10 || ratio[1] <= 10) {
+			option << " <small><span color='#777777'>(" 
+				<< ratio[0] << ':' << ratio[1] << ")</span></small>";
+		}
+
 		options.push_back(option.str());
 	}
 
@@ -156,7 +158,7 @@ bool show_video_mode_dialog(CVideo& video)
 	dlg.set_selected_index(current_choice);
 	dlg.show(video);
 
-	int choice = dlg.selected_index();
+	const int choice = dlg.selected_index();
 
 	if(choice == -1 || resolutions[static_cast<size_t>(choice)] == video.current_resolution()) {
 		return false;
