@@ -30,7 +30,7 @@ public:
 	/**
 	 * Constructor.
 	 */
-	tpreferences(CVideo& video);
+	tpreferences();
 
 	/** The execute function -- see @ref tdialog for more information. */
 	//
@@ -41,7 +41,7 @@ public:
 	//
 	static bool execute(CVideo& video)
 	{
-		tpreferences(video).show(video);
+		tpreferences().show(video);
 		return true;
 	}
 
@@ -125,8 +125,6 @@ private:
 		  const std::vector<std::pair<ttoggle_button*, int> >& vec
 		, int& value
 		, ttoggle_button* active);
-			
-	CVideo& video_;
 };
 
 } // namespace gui2
