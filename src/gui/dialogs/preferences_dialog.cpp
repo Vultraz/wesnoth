@@ -67,12 +67,53 @@ tpreferences::tpreferences(CVideo& video) :
 }
 
 /**
+ * Helper functions to return associative values between accelerated speed
+ * values (double) and the setter slider's steps (int).
+ *
+ * SLIDER AT: 1    2    3    4    5    6    7    8    9    10   11   12
+ * SPEED VAL: 0.25 0.50 0.75 1.00 1.25 1.50 1.75 2.00 3.00 4.00 8.00 16.00
+ */
+static double int_to_accl_speed(int value)
+{
+	double res = 2;
+
+	if (value >= 1 && value <= 8) {
+		res = 0.25 * value;
+	} else if (value == 9 || value == 10) {
+		res = value - 6;
+	} else if (value == 11) {
+		res = 8;
+	} else if (value == 12) {
+		res = 16;
+	}
+
+	return res;
+}
+
+static int accl_speed_to_int(double value)
+{
+	int res = 2;
+
+	if (value >= 0.25 && value <= 2) {
+		res = value * 4;
+	} else if (value == 3 || value == 4) {
+		res = value + 6;
+	} else if (value == 8) {
+		res = 11;
+	} else if (value == 16) {
+		res = 12;
+	}
+
+	return res;
+}
+
+/**
  * Small helper function to display stored resolution
  */
 static void set_res_string(twindow& window)
 {
 	const std::string& res =
-		lexical_cast<std::string>(resolution().first) + " x " + 
+		lexical_cast<std::string>(resolution().first) + " x " +
 		lexical_cast<std::string>(resolution().second);
 	find_widget<tscroll_label>(&window, "resolution", false).set_label(res);
 }
@@ -187,10 +228,15 @@ void tpreferences::setup_radio_toggle(
 	button->set_value(enum_value == start_value);
 
 	connect_signal_mouse_left_click(*button, boost::bind(
-			&tpreferences::toggle_radio_callback, 
+			&tpreferences::toggle_radio_callback,
 			this, boost::ref(vec), boost::ref(start_value), button));
 
 	vec.push_back(std::make_pair(button, enum_value));
+}
+
+static void accel_slider_setter_helper(int speed)
+{
+	set_turbo_speed(int_to_accl_speed(speed));
 }
 
 /**
@@ -207,10 +253,17 @@ void tpreferences::initialize_members(twindow& window)
 		scroll_speed(), set_scroll_speed, window);
 
 	/** ACCELERATED SPEED **/
-	// TODO: figure out how to deal with double-type values to int
-	//setup_toggle_slider_pair("turbo_toggle", "turbo_slider",
-	//	turbo(), turbo_speed(),
-	//	set_turbo, set_turbo_speed, window);
+	setup_toggle_slider_pair("turbo_toggle", "turbo_slider",
+		turbo(), accl_speed_to_int(turbo_speed()),
+		set_turbo, accel_slider_setter_helper, window);
+
+	find_widget<tlabel>(&window, "turbo_value", false).set_label(
+			lexical_cast<std::string>(turbo_speed()));
+
+	connect_signal_notify_modified(
+			  find_widget<tslider>(&window, "turbo_slider", false)
+			, boost::bind(&tpreferences::accl_speed_slider_callback
+			, this, boost::ref(window)));
 
 	/** SKIP AI MOVES **/
 	setup_single_toggle("skip_ai_moves",
@@ -391,11 +444,11 @@ void tpreferences::initialize_members(twindow& window)
 
 	/** LOBBY JOIN NOTIFICATIONS **/
 	setup_radio_toggle("lobby_joins_none", SHOW_NONE,
-		lobby_joins(), lobby_joins_, window); 
+		lobby_joins(), lobby_joins_, window);
 	setup_radio_toggle("lobby_joins_friends", SHOW_FRIENDS,
-		lobby_joins(), lobby_joins_, window); 
+		lobby_joins(), lobby_joins_, window);
 	setup_radio_toggle("lobby_joins_all", SHOW_ALL,
-		lobby_joins(), lobby_joins_, window); 
+		lobby_joins(), lobby_joins_, window);
 
 	/** FRIENDS LIST **/
 	// TODO
@@ -403,7 +456,7 @@ void tpreferences::initialize_members(twindow& window)
 	//		  find_widget<tbutton>(&window, "mp_friends", false)
 	//		, boost::bind(&gui2::tadvanced_graphics_options::display
 	//		, boost::ref(window.video())));
-	
+
 	/** ALERTS **/
 	connect_signal_mouse_left_click(
 			  find_widget<tbutton>(&window, "mp_alerts", false)
@@ -523,6 +576,15 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 		find_widget<ttoggle_button>(&window, "fullscreen", false).get_value_bool();
 	video_.set_fullscreen(ison);
 	set_res_string(window);
+}
+
+// Special Accelerated Speed slider callback
+void tpreferences::accl_speed_slider_callback(twindow& window)
+{
+	const double speed = int_to_accl_speed(
+		find_widget<tslider>(&window, "turbo_slider", false).get_value());
+
+	find_widget<tlabel>(&window, "turbo_value", false).set_label(lexical_cast<std::string>(speed));
 }
 
 void tpreferences::toggle_radio_callback(
