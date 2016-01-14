@@ -363,7 +363,7 @@ void tpreferences::initialize_members(twindow& window)
 
 	/** SHOW UNIT IDLE ANIMS **/
 	setup_toggle_slider_pair("animate_units_idle", "idle_anim_frequency",
-		sound_on(), sound_volume(),
+		idle_anim(), idle_anim_rate(),
 		set_idle_anim, set_idle_anim_rate, window);
 
 	/** SELECT THEME **/
