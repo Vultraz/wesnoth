@@ -90,6 +90,7 @@ void tsimple_item_selector::pre_show(CVideo& /*video*/, twindow& window)
 		string_map column;
 
 		column["label"] = it;
+		column["use_markup"] = "true";
 		data.insert(std::make_pair("item", column));
 
 		list.add_row(data);
