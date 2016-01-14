@@ -61,8 +61,7 @@ using namespace preferences;
 
 REGISTER_DIALOG(preferences)
 
-tpreferences::tpreferences(CVideo& video) :
-	 video_(video)
+tpreferences::tpreferences()
 {
 }
 
@@ -574,7 +573,7 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 {
 	const bool ison =
 		find_widget<ttoggle_button>(&window, "fullscreen", false).get_value_bool();
-	video_.set_fullscreen(ison);
+	window.video().set_fullscreen(ison);
 	set_res_string(window);
 }
 
