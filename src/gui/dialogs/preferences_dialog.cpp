@@ -200,7 +200,7 @@ void tpreferences::setup_slider_label_pair(
 		, twindow& window)
 {
 	tslider& slider = find_widget<tslider>(&window, slider_widget, false);
-	tlabel& label = find_widget<tlabel>(&window, label_widget, false);
+	tscroll_label& label = find_widget<tscroll_label>(&window, label_widget, false);
 
 	slider.set_value(start_value);
 	label.set_label(lexical_cast<std::string>(start_value));
@@ -257,7 +257,7 @@ void tpreferences::initialize_members(twindow& window)
 		turbo(), accl_speed_to_int(turbo_speed()),
 		set_turbo, accel_slider_setter_helper, window);
 
-	find_widget<tlabel>(&window, "turbo_value", false).set_label(
+	find_widget<tscroll_label>(&window, "turbo_value", false).set_label(
 			lexical_cast<std::string>(turbo_speed()));
 
 	connect_signal_notify_modified(
@@ -566,7 +566,7 @@ void tpreferences::slider_label_pair_callback(const std::string& slider_widget,
 	const int value = find_widget<tslider>(&window, slider_widget, false).get_value();
 	setter(value);
 
-	find_widget<tlabel>(&window, label_widget, false).set_label(lexical_cast<std::string>(value));
+	find_widget<tscroll_label>(&window, label_widget, false).set_label(lexical_cast<std::string>(value));
 }
 
 // Special fullsceen callback
@@ -584,7 +584,7 @@ void tpreferences::accl_speed_slider_callback(twindow& window)
 	const double speed = int_to_accl_speed(
 		find_widget<tslider>(&window, "turbo_slider", false).get_value());
 
-	find_widget<tlabel>(&window, "turbo_value", false).set_label(lexical_cast<std::string>(speed));
+	find_widget<tscroll_label>(&window, "turbo_value", false).set_label(lexical_cast<std::string>(speed));
 }
 
 void tpreferences::toggle_radio_callback(
