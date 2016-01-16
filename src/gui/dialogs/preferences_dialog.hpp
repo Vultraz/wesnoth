@@ -55,13 +55,17 @@ private:
 	/** Inherited from tdialog. */
 	void post_show(twindow& window);
 
+	/** Initializers */
 	void initialize_members(twindow& window);
+	void initialize_tabs(twindow& window);
 
+	void add_tab(class tlistbox& tab_bar, const std::string& label);
 	void add_pager_row(class tlistbox& selector, const std::string& icon, const std::string& label);
-	void set_visible_page(twindow& window, unsigned int page);
+	void set_visible_page(twindow& window, unsigned int page, const std::string& pager_id);
 
 	/** Callback for page selection changes. */
 	void on_page_select(twindow& window);
+	void on_tab_select(twindow& window, const std::string& widget_id);
 
 	void fullscreen_toggle_callback(twindow& window);
 	void accl_speed_slider_callback(twindow& window);

@@ -379,10 +379,10 @@ void tpreferences::initialize_members(twindow& window)
 	//		, boost::ref(window.video())));
 
 	/** ADVANCED DISPLAY OPTIONS **/
-	connect_signal_mouse_left_click(
-			  find_widget<tbutton>(&window, "disp_advanced", false)
-			, boost::bind(&gui2::tadvanced_graphics_options::display
-			, boost::ref(window.video())));
+	//connect_signal_mouse_left_click(
+	//		  find_widget<tbutton>(&window, "disp_advanced", false)
+	//		, boost::bind(&gui2::tadvanced_graphics_options::display
+	//		, boost::ref(window.video())));
 
 
 	/**
@@ -457,10 +457,10 @@ void tpreferences::initialize_members(twindow& window)
 	//		, boost::ref(window.video())));
 
 	/** ALERTS **/
-	connect_signal_mouse_left_click(
-			  find_widget<tbutton>(&window, "mp_alerts", false)
-			, boost::bind(&gui2::tmp_alerts_options::display
-			, boost::ref(window.video())));
+	//connect_signal_mouse_left_click(
+	//		  find_widget<tbutton>(&window, "mp_alerts", false)
+	//		, boost::bind(&gui2::tmp_alerts_options::display
+	//		, boost::ref(window.video())));
 
 	/** SET WESNOTHD PATH **/
 	connect_signal_mouse_left_click(
@@ -477,6 +477,25 @@ void tpreferences::add_pager_row(tlistbox& selector, const std::string& icon, co
 	selector.add_row(data);
 }
 
+void tpreferences::add_tab(tlistbox& tab_bar, const std::string& label)
+{
+	std::map<std::string, string_map> data;
+	data["tab_label"]["label"] = label;
+	tab_bar.add_row(data);
+}
+
+void tpreferences::initialize_tabs(twindow& window)
+{
+	/** MULTIPLAYER TABS **/
+	tlistbox& tabs_multiplayer = find_widget<tlistbox>(&window, "mp_tab", false);
+	add_tab(tabs_multiplayer, _("General"));
+	add_tab(tabs_multiplayer, _("Friends"));
+	add_tab(tabs_multiplayer, _("Alerts"));
+
+	tabs_multiplayer.set_callback_value_change(make_dialog_callback(
+		boost::bind(&tpreferences::on_tab_select, this, _1, "mp_tab")));
+}
+	
 void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 {
 	tlistbox& selector = find_widget<tlistbox>(&window, "selector", false);
@@ -489,8 +508,7 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 			, boost::ref(window)));
 #else
 	selector.set_callback_value_change(dialog_callback
-			<tpreferences
-			, &tpreferences::on_page_select>);
+			<tpreferences, &tpreferences::on_page_select>);
 #endif
 	window.keyboard_capture(&selector);
 
@@ -499,6 +517,14 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	add_pager_row(selector, "music.png",  _("Prefs section^Sound"));
 	add_pager_row(selector, "multiplayer.png", _("Prefs section^Multiplayer"));
 	add_pager_row(selector, "advanced.png", _("Advanced section^Advanced"));
+
+	//
+	// Initializes tabs for various pages. This should be done before
+	// setting up the callbacks.
+	//
+	initialize_tabs(window);
+
+	set_visible_page(window, 0, "mp_tab_pager");
 
 	//
 	// We need to establish callbacks before selecting the initial page,
@@ -510,12 +536,12 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 
 	selector.select_row(0);
 	pager.select_layer(0);
+
 }
 
-void tpreferences::set_visible_page(twindow& window, unsigned int page)
+void tpreferences::set_visible_page(twindow& window, unsigned int page, const std::string& pager_id)
 {
-	tstacked_widget& pager = find_widget<tstacked_widget>(&window, "pager", false);
-	pager.select_layer(page);
+	find_widget<tstacked_widget>(&window, pager_id, false).select_layer(page);
 }
 
 /**
@@ -607,12 +633,18 @@ void tpreferences::toggle_radio_callback(
 	}
 }
 
-
 void tpreferences::on_page_select(twindow& window)
 {
 	const int selected_row =
 		std::max(0, find_widget<tlistbox>(&window, "selector", false).get_selected_row());
-	set_visible_page(window, static_cast<unsigned int>(selected_row));
+	set_visible_page(window, static_cast<unsigned int>(selected_row), "pager");
+}
+
+void tpreferences::on_tab_select(twindow& window, const std::string& widget_id)
+{
+	const int selected_row =
+		std::max(0, find_widget<tlistbox>(&window, widget_id, false).get_selected_row());
+	set_visible_page(window, static_cast<unsigned int>(selected_row), (widget_id + "_pager"));
 }
 
 void tpreferences::post_show(twindow& /*window*/)
