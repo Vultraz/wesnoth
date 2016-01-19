@@ -144,6 +144,9 @@ void tcombobox::signal_handler_left_button_click(const event::tevent event,
 	if(droplist.show(get_window()->video())) {
 		selected_ = droplist.selected_item();
 		this->set_label(values_[selected_]);
+		if(selected_callback_) {
+			selected_callback_(*this);
+		}
 		if(retval_ != 0) {
 			twindow* window = get_window();
 			if(window) {
