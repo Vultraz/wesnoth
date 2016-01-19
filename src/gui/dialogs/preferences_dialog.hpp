@@ -15,6 +15,7 @@
 #ifndef GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 #define GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 
+#include "config.hpp"
 #include "gui/dialogs/dialog.hpp"
 #include "gui/widgets/toggle_button.hpp"
 
@@ -30,7 +31,7 @@ public:
 	/**
 	 * Constructor.
 	 */
-	tpreferences();
+	tpreferences(const config& game_cfg);
 
 	/** The execute function -- see @ref tdialog for more information. */
 	//
@@ -39,9 +40,9 @@ public:
 	//       not display(). But we probably should drop this later and force
 	//       callers communicate with the dialog directly. Undecided. -- shadowm
 	//
-	static bool execute(CVideo& video)
+	static bool execute(CVideo& video, const config& game_cfg)
 	{
-		tpreferences().show(video);
+		tpreferences(game_cfg).show(video);
 		return true;
 	}
 
@@ -129,6 +130,18 @@ private:
 		  const std::vector<std::pair<ttoggle_button*, int> >& vec
 		, int& value
 		, ttoggle_button* active);
+
+	const config& game_cfg_;
+
+	struct advanced_preferences_sorter
+	{
+		bool operator()(const config& lhs, const config& rhs) const
+		{
+			return lhs["name"].t_str().str() < rhs["name"].t_str().str();
+		}
+	};
+
+	std::vector<config> adv_preferences_cfg_;
 };
 
 } // namespace gui2

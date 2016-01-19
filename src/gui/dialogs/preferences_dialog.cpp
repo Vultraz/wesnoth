@@ -61,8 +61,14 @@ using namespace preferences;
 
 REGISTER_DIALOG(preferences)
 
-tpreferences::tpreferences()
+tpreferences::tpreferences(const config& game_cfg)
+	: game_cfg_(game_cfg)
 {
+	BOOST_FOREACH(const config& adv, game_cfg_.child_range("advanced_preference")) {
+		adv_preferences_cfg_.push_back(adv);
+	}
+
+	std::sort(adv_preferences_cfg_.begin(), adv_preferences_cfg_.end(), advanced_preferences_sorter());
 }
 
 /**
@@ -517,6 +523,16 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	add_pager_row(selector, "music.png",  _("Prefs section^Sound"));
 	add_pager_row(selector, "multiplayer.png", _("Prefs section^Multiplayer"));
 	add_pager_row(selector, "advanced.png", _("Advanced section^Advanced"));
+
+	tlistbox& advanced = find_widget<tlistbox>(&window, "advanced_prefs", false);
+
+	BOOST_FOREACH(const config& option, adv_preferences_cfg_)
+	{
+		std::map<std::string, string_map> data;
+		data["ap_name"]["label"] = option["name"];
+		data["ap_status"]["label"] = get(option["field"], option["default"].str());
+		advanced.add_row(data);
+	}
 
 	//
 	// Initializes tabs for various pages. This should be done before
