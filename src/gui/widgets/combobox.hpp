@@ -68,7 +68,7 @@ public:
 	virtual unsigned get_value() const OVERRIDE { return selected_; }
 
 	/** Inherited from tselectable_ */
-	virtual void set_value(const unsigned value ) OVERRIDE { set_selected(value) }
+	virtual void set_value(const unsigned value ) OVERRIDE { set_selected(value); }
 
 	/** Inherited from tselectable_ */
 	virtual unsigned num_states() const OVERRIDE { return values_.size(); }
