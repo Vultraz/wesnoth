@@ -15,8 +15,7 @@
 #define GETTEXT_DOMAIN "wesnoth-lib"
 
 #include "gui/dialogs/drop_down_list.hpp"
-#include "..\widgets\listbox.hpp"
-#include "..\widgets\window.hpp"
+#include "gui/widgets/listbox.hpp"
 #include "gui/auxiliary/find_widget.tpp"
 #include "gui/dialogs/dialog.hpp"
 #include "gui/widgets/integer_selector.hpp"
