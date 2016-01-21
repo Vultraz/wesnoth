@@ -31,6 +31,7 @@
 #include "gui/dialogs/simple_item_selector.hpp"
 #include "gui/dialogs/transient_message.hpp"
 #include "gui/widgets/button.hpp"
+#include "gui/widgets/combobox.hpp"
 #include "gui/widgets/grid.hpp"
 #include "gui/widgets/label.hpp"
 #ifdef GUI2_EXPERIMENTAL_LISTBOX
@@ -63,6 +64,7 @@ REGISTER_DIALOG(preferences)
 
 tpreferences::tpreferences(const config& game_cfg)
 	: game_cfg_(game_cfg)
+	, resolutions_()
 {
 	BOOST_FOREACH(const config& adv, game_cfg_.child_range("advanced_preference")) {
 		adv_preferences_cfg_.push_back(adv);
@@ -113,14 +115,35 @@ static int accl_speed_to_int(double value)
 }
 
 /**
- * Small helper function to display stored resolution
+ * Helper function to refresh resolution list
  */
-static void set_res_string(twindow& window)
+static void set_res_list(twindow& window)
 {
-	const std::string& res =
-		lexical_cast<std::string>(resolution().first) + " x " +
-		lexical_cast<std::string>(resolution().second);
-	find_widget<tscroll_label>(&window, "resolution", false).set_label(res);
+	const std::vector<std::pair<int,int> > resolutions = window.video().get_available_resolutions(true);
+
+	std::vector<std::string> options;
+	for (size_t k = 0; k < resolutions.size(); ++k) {
+		std::pair<int, int> const& res = resolutions[k];
+
+		std::ostringstream option;
+		option << res.first << utils::unicode_multiplication_sign << res.second;
+
+		const int div = boost::math::gcd(res.first, res.second);
+		const int ratio[2] = {res.first/div, res.second/div};
+		if (ratio[0] <= 10 || ratio[1] <= 10) {
+			option << " <span color='#777777'>(" 
+				<< ratio[0] << ':' << ratio[1] << ")</span>";
+		}
+
+		options.push_back(option.str());
+	}
+
+	const unsigned current_res = std::find(resolutions.begin(), resolutions.end(), 
+		window.video().current_resolution()) - resolutions.begin();
+
+	tcombobox& res_list = find_widget<tcombobox>(&window, "resolution_set", false);
+	res_list.set_use_markup(true);
+	res_list.set_values(options, current_res);
 }
 
 /**
@@ -333,14 +356,10 @@ void tpreferences::initialize_members(twindow& window)
 			  &tpreferences::fullscreen_toggle_callback
 			, this, boost::ref(window)));
 
-	/** RESOLUTION LABEL **/
-	set_res_string(window);
-
 	/** SET RESOLUTION **/
-	connect_signal_mouse_left_click(
-			  find_widget<tbutton>(&window, "resolution_set", false)
-			, boost::bind(&preferences::show_video_mode_dialog
-			, boost::ref(window.video())));
+	find_widget<tcombobox>(&window, "resolution_set", false).connect_click_handler(
+			  boost::bind(&tpreferences::handle_res_select
+			, this, boost::ref(window)));
 
 	/** SHOW FLOATING LABELS **/
 	setup_single_toggle("show_floating_labels",
@@ -501,7 +520,7 @@ void tpreferences::initialize_tabs(twindow& window)
 	tabs_multiplayer.set_callback_value_change(make_dialog_callback(
 		boost::bind(&tpreferences::on_tab_select, this, _1, "mp_tab")));
 }
-	
+
 void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 {
 	tlistbox& selector = find_widget<tlistbox>(&window, "selector", false);
@@ -523,6 +542,9 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	add_pager_row(selector, "music.png",  _("Prefs section^Sound"));
 	add_pager_row(selector, "multiplayer.png", _("Prefs section^Multiplayer"));
 	add_pager_row(selector, "advanced.png", _("Advanced section^Advanced"));
+
+	resolutions_ = window.video().get_available_resolutions(true);
+	set_res_list(window);
 
 	tlistbox& advanced = find_widget<tlistbox>(&window, "advanced_prefs", false);
 
@@ -616,7 +638,19 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 	const bool ison =
 		find_widget<ttoggle_button>(&window, "fullscreen", false).get_value_bool();
 	window.video().set_fullscreen(ison);
-	set_res_string(window);
+	set_res_list(window);
+	find_widget<tcombobox>(&window, "resolution_set", false).set_active(!ison);
+}
+
+void tpreferences::handle_res_select(twindow& window)
+{
+	const int choice = find_widget<tcombobox>(&window, "resolution_set", false).get_value();
+	if (resolutions_[static_cast<size_t>(choice)] == window.video().current_resolution()) {
+		return;
+	}
+
+	window.video().set_resolution(resolutions_[static_cast<size_t>(choice)]);
+	set_res_list(window);
 }
 
 // Special Accelerated Speed slider callback

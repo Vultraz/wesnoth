@@ -957,7 +957,7 @@ void preferences_dialog::process_event()
 		if (show_floating_labels_button_.pressed())
 			set_show_floating_labels(show_floating_labels_button_.checked());
 		if (video_mode_button_.pressed())
-			show_video_mode_dialog(video_);
+			//show_video_mode_dialog(video_);
 		if (theme_button_.pressed()) {
 			show_theme_dialog(video_);
 			parent->clear_buttons();

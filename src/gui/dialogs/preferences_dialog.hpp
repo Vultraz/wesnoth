@@ -68,6 +68,7 @@ private:
 	void on_page_select(twindow& window);
 	void on_tab_select(twindow& window, const std::string& widget_id);
 
+	void handle_res_select(twindow& window);
 	void fullscreen_toggle_callback(twindow& window);
 	void accl_speed_slider_callback(twindow& window);
 
@@ -142,6 +143,7 @@ private:
 	};
 
 	std::vector<config> adv_preferences_cfg_;
+	std::vector<std::pair<int,int> > resolutions_;
 };
 
 } // namespace gui2
