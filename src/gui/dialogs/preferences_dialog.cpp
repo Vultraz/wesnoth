@@ -63,10 +63,9 @@ using namespace preferences;
 REGISTER_DIALOG(preferences)
 
 tpreferences::tpreferences(const config& game_cfg)
-	: game_cfg_(game_cfg)
-	, resolutions_()
+	: resolutions_()
 {
-	BOOST_FOREACH(const config& adv, game_cfg_.child_range("advanced_preference")) {
+	BOOST_FOREACH(const config& adv, game_cfg.child_range("advanced_preference")) {
 		adv_preferences_cfg_.push_back(adv);
 	}
 

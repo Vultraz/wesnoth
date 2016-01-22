@@ -132,8 +132,6 @@ private:
 		, int& value
 		, ttoggle_button* active);
 
-	const config& game_cfg_;
-
 	struct advanced_preferences_sorter
 	{
 		bool operator()(const config& lhs, const config& rhs) const
