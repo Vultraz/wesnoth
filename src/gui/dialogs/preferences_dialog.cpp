@@ -44,6 +44,8 @@
 #include "gui/widgets/slider.hpp"
 #include "gui/widgets/stacked_widget.hpp"
 #include "gui/widgets/toggle_button.hpp"
+#include "gui/widgets/tree_view.hpp"
+#include "gui/widgets/tree_view_node.hpp"
 #include "gui/widgets/window.hpp"
 
 #include "gettext.hpp"
@@ -64,12 +66,14 @@ REGISTER_DIALOG(preferences)
 
 tpreferences::tpreferences(const config& game_cfg)
 	: resolutions_()
+	, adv_preferences_cfg_()
 {
 	BOOST_FOREACH(const config& adv, game_cfg.child_range("advanced_preference")) {
 		adv_preferences_cfg_.push_back(adv);
 	}
 
-	std::sort(adv_preferences_cfg_.begin(), adv_preferences_cfg_.end(), advanced_preferences_sorter());
+	std::sort(adv_preferences_cfg_.begin(), adv_preferences_cfg_.end(), 
+		advanced_preferences_sorter());
 }
 
 /**
@@ -433,13 +437,6 @@ void tpreferences::initialize_members(twindow& window)
 		UI_sound_on(), UI_volume(),
 		set_UI_sound, set_UI_volume, window);
 
-	/** ADVANCED SOUND OPTIONS **/
-	// TODO
-	//connect_signal_mouse_left_click(
-	//		  find_widget<tbutton>(&window, "sound_advanced", false)
-	//		, boost::bind(&gui2::tadvanced_graphics_options::display
-	//		, boost::ref(window.video())));
-
 
 	/**
 	 * MULTIPLAYER PANEL
@@ -491,6 +488,91 @@ void tpreferences::initialize_members(twindow& window)
 			  find_widget<tbutton>(&window, "mp_wesnothd", false)
 			, boost::bind(&preferences::show_wesnothd_server_search
 			, boost::ref(window.video())));
+
+
+	/**
+	 * ADVANCED PANEL
+	 */
+
+	ttree_view& advanced = find_widget<ttree_view>(&window, "advanced_prefs", false);
+
+	std::map<std::string, string_map> tree_group_item;
+
+	BOOST_FOREACH(const config& option, adv_preferences_cfg_)
+	{
+		tree_group_item["tree_view_node_label"]["label"] = option["name"];
+		tree_group_item["value"]["label"] = get(option["field"], option["default"].str());
+
+		ttree_view_node& pref_node = advanced.add_node("pref_main", tree_group_item);
+		ttree_view_node& detail_node = pref_node.add_child("pref_details", tree_group_item);
+
+		tgrid* details_grid = dynamic_cast<tgrid*>(detail_node.find("pref_setter_grid", true));
+		VALIDATE(details_grid, missing_widget("pref_setter_grid"));
+
+		ttoggle_button* toggle_box = dynamic_cast<ttoggle_button*>(pref_node.find("toggle_setter", true));
+		toggle_box->set_visible(tcontrol::tvisible::hidden);
+
+		switch (ADVANCED_PREF_TYPE::string_to_enum(option["type"].str()).v) {
+			case ADVANCED_PREF_TYPE::TOGGLE: {
+				pref_node.clear();
+
+				toggle_box->set_visible(tcontrol::tvisible::visible);
+				toggle_box->set_value(get(option["field"], option["default"].to_bool()));
+
+				break;
+			}
+
+			case ADVANCED_PREF_TYPE::SLIDER: {
+				tslider* setter_widget = new tslider;
+				setter_widget->set_definition("minimal");
+				// Maximum must be set first or this will assert
+				setter_widget->set_maximum_value(option["max"].to_int());
+				setter_widget->set_minimum_value(option["min"].to_int());
+				setter_widget->set_value(lexical_cast<int>(get(option["field"])));
+				setter_widget->set_step_size(
+					option["step"].empty() ? 1 : option["step"].to_int());
+
+				details_grid->swap_child("setter", setter_widget, true);
+
+				break;
+			}
+
+			case ADVANCED_PREF_TYPE::COMBO: {
+				std::vector<std::string> combo_options;
+				std::vector<std::string> combo_ids;
+
+				BOOST_FOREACH(const config& choice, option.child_range("option"))
+				{
+					combo_options.push_back(choice["name"]);
+					combo_ids.push_back(choice["id"]);
+				}
+
+				const unsigned selected = std::find(combo_ids.begin(), combo_ids.end(), 
+					get(option["field"], option["default"].str())) - combo_ids.begin();
+
+				tcombobox* setter_widget = new tcombobox;
+				setter_widget->set_definition("default");
+				setter_widget->set_values(combo_options, selected);
+				setter_widget->set_use_markup(true);
+
+				details_grid->swap_child("setter", setter_widget, true);
+
+				break;
+			}
+
+			case ADVANCED_PREF_TYPE::SPECIAL: {
+
+				// TODO: actual function passing
+				//pref_node.set_selection_change_callback(2
+				//	, boost::bind(&preferences::show_theme_dialog
+				//	, boost::ref(window.video())));
+
+				pref_node.clear();
+									
+				break;
+			}
+		}
+	}
 }
 
 void tpreferences::add_pager_row(tlistbox& selector, const std::string& icon, const std::string& label)
@@ -544,16 +626,6 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 
 	resolutions_ = window.video().get_available_resolutions(true);
 	set_res_list(window);
-
-	tlistbox& advanced = find_widget<tlistbox>(&window, "advanced_prefs", false);
-
-	BOOST_FOREACH(const config& option, adv_preferences_cfg_)
-	{
-		std::map<std::string, string_map> data;
-		data["ap_name"]["label"] = option["name"];
-		data["ap_status"]["label"] = get(option["field"], option["default"].str());
-		advanced.add_row(data);
-	}
 
 	//
 	// Initializes tabs for various pages. This should be done before

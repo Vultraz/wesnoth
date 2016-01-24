@@ -16,8 +16,10 @@
 #define GUI_DIALOGS_PREFERENCES_DIALOG_HPP_INCLUDED
 
 #include "config.hpp"
+#include "make_enum.hpp"
 #include "gui/dialogs/dialog.hpp"
 #include "gui/widgets/toggle_button.hpp"
+#include "gui/widgets/widget.hpp"
 
 // This file is not named preferences.hpp in order -I conflicts with
 // src/preferences.hpp.
@@ -132,6 +134,13 @@ private:
 		, int& value
 		, ttoggle_button* active);
 
+	MAKE_ENUM(ADVANCED_PREF_TYPE, 
+		(TOGGLE,  "boolean")
+		(SLIDER,  "int")
+		(COMBO,   "combo")
+		(SPECIAL, "custom")
+	)
+
 	struct advanced_preferences_sorter
 	{
 		bool operator()(const config& lhs, const config& rhs) const
@@ -140,8 +149,8 @@ private:
 		}
 	};
 
-	std::vector<config> adv_preferences_cfg_;
 	std::vector<std::pair<int,int> > resolutions_;
+	std::vector<config> adv_preferences_cfg_;
 };
 
 } // namespace gui2
