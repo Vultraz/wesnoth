@@ -504,20 +504,24 @@ void tpreferences::initialize_members(twindow& window)
 		tree_group_item["value"]["label"] = get(option["field"], option["default"].str());
 
 		ttree_view_node& pref_node = advanced.add_node("pref_main", tree_group_item);
-		ttree_view_node& detail_node = pref_node.add_child("pref_details", tree_group_item);
+		ttree_view_node& detail_node = pref_node.add_child("pref_details", 
+			std::map<std::string, string_map>());
+
+		tgrid* main_grid = dynamic_cast<tgrid*>(pref_node.find("pref_main_grid", true));
+		VALIDATE(main_grid, missing_widget("pref_main_grid"));
 
 		tgrid* details_grid = dynamic_cast<tgrid*>(detail_node.find("pref_setter_grid", true));
 		VALIDATE(details_grid, missing_widget("pref_setter_grid"));
 
-		ttoggle_button* toggle_box = dynamic_cast<ttoggle_button*>(pref_node.find("toggle_setter", true));
-		toggle_box->set_visible(tcontrol::tvisible::hidden);
+		ttoggle_button& toggle_box = find_widget<ttoggle_button>(main_grid, "value_toggle", false);
+		toggle_box.set_visible(tcontrol::tvisible::hidden);
 
 		switch (ADVANCED_PREF_TYPE::string_to_enum(option["type"].str()).v) {
 			case ADVANCED_PREF_TYPE::TOGGLE: {
 				pref_node.clear();
 
-				toggle_box->set_visible(tcontrol::tvisible::visible);
-				toggle_box->set_value(get(option["field"], option["default"].to_bool()));
+				toggle_box.set_visible(tcontrol::tvisible::visible);
+				toggle_box.set_value(get(option["field"], option["default"].to_bool()));
 
 				break;
 			}
