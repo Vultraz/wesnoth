@@ -20,6 +20,7 @@
 #include "preferences.hpp"
 #include "preferences_display.hpp"
 #include "lobby_preferences.hpp"
+#include "gettext.hpp"
 #include "formatter.hpp"
 #include "video.hpp"
 
@@ -47,6 +48,7 @@
 #include "gui/widgets/tree_view.hpp"
 #include "gui/widgets/tree_view_node.hpp"
 #include "gui/widgets/window.hpp"
+#include "util.hpp"
 
 #include "gettext.hpp"
 
@@ -54,12 +56,9 @@
 #include <boost/bind.hpp>
 #include <boost/math/common_factor_rt.hpp>
 
-namespace {
-	//const unsigned int num_pages = 5;
-}
-
 namespace gui2 {
 
+// TODO: probably should use a namespace alias instead
 using namespace preferences;
 
 REGISTER_DIALOG(preferences)
@@ -74,6 +73,30 @@ tpreferences::tpreferences(const config& game_cfg)
 
 	std::sort(adv_preferences_cfg_.begin(), adv_preferences_cfg_.end(), 
 		advanced_preferences_sorter());
+}
+
+static std::string bool_to_display_string(bool value)
+{
+	return value ? _("yes") : _("no");
+}
+
+template <typename T>
+static std::string disambiguate_widget_value(T& parent_widget)
+{
+	std::string value;
+
+	// Determine the template type in order to use the correct value getter
+	if (ttoggle_button* widget = dynamic_cast<ttoggle_button*>(&parent_widget)) {
+		value = bool_to_display_string((*widget).get_value_bool());
+
+	} else if (tcombobox* widget = dynamic_cast<tcombobox*>(&parent_widget)) {
+		value = (*widget).get_value_string();
+
+	} else {
+		value = parent_widget.get_value();
+	}
+
+	return value;
 }
 
 /**
@@ -117,12 +140,17 @@ static int accl_speed_to_int(double value)
 	return res;
 }
 
+static void accel_slider_setter_helper(int speed)
+{
+	set_turbo_speed(int_to_accl_speed(speed));
+}
+
 /**
  * Helper function to refresh resolution list
  */
-static void set_res_list(twindow& window)
+static void set_res_list(tcombobox& res_list, CVideo& video)
 {
-	const std::vector<std::pair<int,int> > resolutions = window.video().get_available_resolutions(true);
+	const std::vector<std::pair<int,int> > resolutions = video.get_available_resolutions(true);
 
 	std::vector<std::string> options;
 	for (size_t k = 0; k < resolutions.size(); ++k) {
@@ -142,21 +170,20 @@ static void set_res_list(twindow& window)
 	}
 
 	const unsigned current_res = std::find(resolutions.begin(), resolutions.end(), 
-		window.video().current_resolution()) - resolutions.begin();
+		video.current_resolution()) - resolutions.begin();
 
-	tcombobox& res_list = find_widget<tcombobox>(&window, "resolution_set", false);
-	res_list.set_use_markup(true);
 	res_list.set_values(options, current_res);
 }
 
 /**
  * Sets the initial state and callback for a simple bool-state toggle button
  */
+template <typename T>
 void tpreferences::setup_single_toggle(
 		  const std::string& widget_id
 		, const bool start_value
-		, void (*callback) (bool)
-		, twindow& window)
+		, boost::function<void(bool)> callback
+		, T& window)
 {
 	ttoggle_button& widget =
 		find_widget<ttoggle_button>(&window, widget_id, false);
@@ -165,21 +192,21 @@ void tpreferences::setup_single_toggle(
 
 	connect_signal_mouse_left_click(widget, boost::bind(
 		  &tpreferences::single_toggle_callback
-		, this, widget_id
-		, callback, boost::ref(window)));
+		, this, boost::ref(widget), callback));
 }
 
 /**
  * Sets the initial state and callback for a bool-state toggle button/slider pair
  */
+template <typename T>
 void tpreferences::setup_toggle_slider_pair(
 		  const std::string& toggle_widget
 		, const std::string& slider_widget
 		, const bool toggle_start_value
 		, const int slider_state_value
 		, boost::function<void(bool)> toggle_callback
-		, void (*slider_callback) (int)
-		, twindow& window)
+		, boost::function<void(int)> slider_callback
+		, T& window)
 {
 	ttoggle_button& button =
 		find_widget<ttoggle_button>(&window, toggle_widget, false);
@@ -192,54 +219,55 @@ void tpreferences::setup_toggle_slider_pair(
 
 	connect_signal_mouse_left_click(button, boost::bind(
 		  &tpreferences::toggle_slider_pair_callback
-		, this, toggle_widget, slider_widget
-		, toggle_callback, boost::ref(window)));
+		, this, boost::ref(button), boost::ref(slider)
+		, toggle_callback));
 
 	connect_signal_notify_modified(slider, boost::bind(
 		  &tpreferences::single_slider_callback
-		, this, slider_widget
-		, slider_callback, boost::ref(window)));
+		, this, boost::ref(slider)
+		, slider_callback));
 }
 
 /**
  * Sets the initial state and callback for a standalone slider
  */
+template <typename T>
 void tpreferences::setup_single_slider(
 		  const std::string& widget_id
 		, const int start_value
-		, void (*callback) (int)
-		, twindow& window)
+		, boost::function<void(int)> slider_callback
+		, T& window)
 {
 	tslider& widget = find_widget<tslider>(&window, widget_id, false);
-
 	widget.set_value(start_value);
 
 	connect_signal_notify_modified(widget, boost::bind(
 		  &tpreferences::single_slider_callback
-		, this, widget_id
-		, callback, boost::ref(window)));
+		, this, boost::ref(widget)
+		, slider_callback));
 }
 
 /**
- * Sets the initial state and callback for a standalone slider
+ * Sets the initial state and callback for a combobox
  */
-void tpreferences::setup_slider_label_pair(
-		  const std::string& slider_widget
-		, const std::string& label_widget
-		, const int start_value
-		, void (*callback) (int)
-		, twindow& window)
+template <typename T>
+void tpreferences::setup_combobox(
+		  const std::string& widget_id
+		, combo_data options
+		, const unsigned start_value
+		, boost::function<void(std::string)> callback
+		, T& window)
 {
-	tslider& slider = find_widget<tslider>(&window, slider_widget, false);
-	tscroll_label& label = find_widget<tscroll_label>(&window, label_widget, false);
+	tcombobox& widget =
+		find_widget<tcombobox>(&window, widget_id, false);
 
-	slider.set_value(start_value);
-	label.set_label(lexical_cast<std::string>(start_value));
+	widget.set_use_markup(true);
+	widget.set_values(options.first, start_value);
 
-	connect_signal_notify_modified(slider, boost::bind(
-		  &tpreferences::slider_label_pair_callback
-		, this, slider_widget, label_widget
-		, callback, boost::ref(window)));
+	connect_signal_mouse_left_click(widget, boost::bind(
+		  &tpreferences::simple_combobox_callback
+		, this, boost::ref(widget)
+		, callback, options.second));
 }
 
 /**
@@ -259,15 +287,41 @@ void tpreferences::setup_radio_toggle(
 	button->set_value(enum_value == start_value);
 
 	connect_signal_mouse_left_click(*button, boost::bind(
-			&tpreferences::toggle_radio_callback,
-			this, boost::ref(vec), boost::ref(start_value), button));
+		&tpreferences::toggle_radio_callback,
+		this, boost::ref(vec), boost::ref(start_value), button));
 
 	vec.push_back(std::make_pair(button, enum_value));
 }
 
-static void accel_slider_setter_helper(int speed)
+/**
+ * Sets up a label that always displays the value of another widget.
+ */
+template <typename T, typename W>
+void tpreferences::bind_status_label(
+		  T& parent
+		, const std::string& label_id
+		, W& window)
 {
-	set_turbo_speed(int_to_accl_speed(speed));
+	tcontrol& label = find_widget<tcontrol>(&window, label_id, false);
+	label.set_label(disambiguate_widget_value(parent));
+
+	parent.set_callback_state_change(boost::bind(
+		  &tpreferences::status_label_callback<T>
+		, this, boost::ref(parent), boost::ref(label)));
+}
+
+template <typename T>
+void tpreferences::bind_status_label(
+		  tslider& parent
+		, const std::string& label_id
+		, T& window)
+{
+	tcontrol& label = find_widget<tcontrol>(&window, label_id, false);
+	label.set_label(lexical_cast<std::string>(parent.get_value()));
+
+	connect_signal_notify_modified(parent, boost::bind(
+		  &tpreferences::status_label_callback<tslider>
+		, this, boost::ref(parent), boost::ref(label)));
 }
 
 /**
@@ -329,8 +383,11 @@ void tpreferences::initialize_members(twindow& window)
 		delete_saves(), set_delete_saves, window);
 
 	/** MAX AUTO SAVES **/
-	setup_slider_label_pair("max_saves_slider", "max_saves_value",
+	setup_single_slider("max_saves_slider",
 		autosavemax(), set_autosavemax, window);
+
+	bind_status_label(find_widget<tslider>(&window, "max_saves_slider", false),
+		"max_saves_value", window);
 
 	/** SET HOTKEYS **/
 	connect_signal_mouse_left_click(
@@ -360,7 +417,13 @@ void tpreferences::initialize_members(twindow& window)
 			, this, boost::ref(window)));
 
 	/** SET RESOLUTION **/
-	find_widget<tcombobox>(&window, "resolution_set", false).connect_click_handler(
+	tcombobox& res_list = find_widget<tcombobox>(&window, "resolution_set", false);
+
+	res_list.set_use_markup(true);
+	res_list.set_active(!fullscreen());
+	set_res_list(res_list, window.video());
+
+	res_list.connect_click_handler(
 			  boost::bind(&tpreferences::handle_res_select
 			, this, boost::ref(window)));
 
@@ -398,19 +461,6 @@ void tpreferences::initialize_members(twindow& window)
 			  find_widget<tbutton>(&window, "choose_theme", false)
 			, boost::bind(&preferences::show_theme_dialog
 			, boost::ref(window.video())));
-
-	/** ORB COLORS **/
-	// TODO
-	//connect_signal_mouse_left_click(
-	//		  find_widget<tbutton>(&window, "orbs_setup", false)
-	//		, boost::bind(&preferences::show_theme_dialog
-	//		, boost::ref(window.video())));
-
-	/** ADVANCED DISPLAY OPTIONS **/
-	//connect_signal_mouse_left_click(
-	//		  find_widget<tbutton>(&window, "disp_advanced", false)
-	//		, boost::bind(&gui2::tadvanced_graphics_options::display
-	//		, boost::ref(window.video())));
 
 
 	/**
@@ -496,32 +546,48 @@ void tpreferences::initialize_members(twindow& window)
 
 	ttree_view& advanced = find_widget<ttree_view>(&window, "advanced_prefs", false);
 
-	std::map<std::string, string_map> tree_group_item;
+	typedef std::map<std::string, string_map> node_content;
+	node_content tree_group_item;
 
 	BOOST_FOREACH(const config& option, adv_preferences_cfg_)
 	{
+		// Details about the current option
+		const ADVANCED_PREF_TYPE& pref_type = ADVANCED_PREF_TYPE::string_to_enum(
+			option["type"].str());
+		const std::string& pref_name = option["field"].str();
+
 		tree_group_item["tree_view_node_label"]["label"] = option["name"];
-		tree_group_item["value"]["label"] = get(option["field"], option["default"].str());
 
 		ttree_view_node& pref_node = advanced.add_node("pref_main", tree_group_item);
-		ttree_view_node& detail_node = pref_node.add_child("pref_details", 
-			std::map<std::string, string_map>());
+		ttree_view_node& detail_node = pref_node.add_child("pref_details", node_content());
 
+		// Get the main grids from each node
 		tgrid* main_grid = dynamic_cast<tgrid*>(pref_node.find("pref_main_grid", true));
 		VALIDATE(main_grid, missing_widget("pref_main_grid"));
 
 		tgrid* details_grid = dynamic_cast<tgrid*>(detail_node.find("pref_setter_grid", true));
 		VALIDATE(details_grid, missing_widget("pref_setter_grid"));
 
+		// The toggle widget for toggle-type options (hidden for other types)
 		ttoggle_button& toggle_box = find_widget<ttoggle_button>(main_grid, "value_toggle", false);
 		toggle_box.set_visible(tcontrol::tvisible::hidden);
 
-		switch (ADVANCED_PREF_TYPE::string_to_enum(option["type"].str()).v) {
+		switch (pref_type.v) {
 			case ADVANCED_PREF_TYPE::TOGGLE: {
 				pref_node.clear();
 
 				toggle_box.set_visible(tcontrol::tvisible::visible);
-				toggle_box.set_value(get(option["field"], option["default"].to_bool()));
+
+				// Needed to disambiguate overloaded function
+				typedef void (*setter) (const std::string &, bool);
+				setter set_ptr = &preferences::set;
+
+				setup_single_toggle("value_toggle"
+					, get(pref_name, option["default"].to_bool())
+					, boost::bind(set_ptr, pref_name, _1)
+					, *main_grid);
+
+				bind_status_label(toggle_box, "value", *main_grid);
 
 				break;
 			}
@@ -529,50 +595,77 @@ void tpreferences::initialize_members(twindow& window)
 			case ADVANCED_PREF_TYPE::SLIDER: {
 				tslider* setter_widget = new tslider;
 				setter_widget->set_definition("minimal");
+				setter_widget->set_id("control_slider");
 				// Maximum must be set first or this will assert
 				setter_widget->set_maximum_value(option["max"].to_int());
 				setter_widget->set_minimum_value(option["min"].to_int());
-				setter_widget->set_value(lexical_cast<int>(get(option["field"])));
 				setter_widget->set_step_size(
 					option["step"].empty() ? 1 : option["step"].to_int());
 
 				details_grid->swap_child("setter", setter_widget, true);
 
+				// Needed to disambiguate overloaded function
+				typedef void (*setter) (const std::string &, int);
+				setter set_ptr = &preferences::set;
+
+				setup_single_slider("control_slider"
+					, lexical_cast_default<int>(get(pref_name), option["default"].to_int())
+					, boost::bind(set_ptr, pref_name, _1)
+					, *details_grid);
+
+				bind_status_label(*setter_widget, "value", *main_grid);
+
 				break;
 			}
 
 			case ADVANCED_PREF_TYPE::COMBO: {
-				std::vector<std::string> combo_options;
-				std::vector<std::string> combo_ids;
+				combo_data combo_options;
 
 				BOOST_FOREACH(const config& choice, option.child_range("option"))
 				{
-					combo_options.push_back(choice["name"]);
-					combo_ids.push_back(choice["id"]);
+					combo_options.first.push_back(choice["name"]);
+					combo_options.second.push_back(choice["id"]);
 				}
 
-				const unsigned selected = std::find(combo_ids.begin(), combo_ids.end(), 
-					get(option["field"], option["default"].str())) - combo_ids.begin();
+				const unsigned selected = std::find(
+					combo_options.second.begin(), combo_options.second.end(), 
+					get(pref_name, option["default"].str())) - combo_options.second.begin();
 
 				tcombobox* setter_widget = new tcombobox;
 				setter_widget->set_definition("default");
-				setter_widget->set_values(combo_options, selected);
-				setter_widget->set_use_markup(true);
+				setter_widget->set_id("control_combobox");
 
 				details_grid->swap_child("setter", setter_widget, true);
+
+				// Needed to disambiguate overloaded function
+				typedef void (*setter) (const std::string &, const std::string &);
+				setter set_ptr = &preferences::set;
+
+				setup_combobox("control_combobox"
+					, combo_options, selected
+					, boost::bind(set_ptr, pref_name, _1)
+					, *details_grid);
+
+				bind_status_label(*setter_widget, "value", *main_grid);
 
 				break;
 			}
 
 			case ADVANCED_PREF_TYPE::SPECIAL: {
-
-				// TODO: actual function passing
-				//pref_node.set_selection_change_callback(2
-				//	, boost::bind(&preferences::show_theme_dialog
-				//	, boost::ref(window.video())));
-
 				pref_node.clear();
-									
+
+				if (pref_name == "advanced_graphic_options") {
+					pref_node.set_callback_state_change(2
+						, boost::bind(gui2::tadvanced_graphics_options::display
+						, boost::ref(window.video())));
+				}
+
+				if (pref_name == "orb_color") {
+					// TODO
+				}
+
+				// Add more options here as needed
+
 				break;
 			}
 		}
@@ -628,8 +721,8 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	add_pager_row(selector, "multiplayer.png", _("Prefs section^Multiplayer"));
 	add_pager_row(selector, "advanced.png", _("Advanced section^Advanced"));
 
+	// TODO: move to constructor?
 	resolutions_ = window.video().get_available_resolutions(true);
-	set_res_list(window);
 
 	//
 	// Initializes tabs for various pages. This should be done before
@@ -661,50 +754,58 @@ void tpreferences::set_visible_page(twindow& window, unsigned int page, const st
  * Generic callback functions
  */
 
+
 /**
  * Sets a simple toggle button callback
  * The bool value of the widget is passeed to the setter
  */
-void tpreferences::single_toggle_callback(const std::string& widget,
-		void (*setter) (bool), twindow& window)
+void tpreferences::single_toggle_callback(const ttoggle_button& widget,
+		boost::function<void(bool)> setter)
 {
-	setter(find_widget<ttoggle_button>(&window, widget, false).get_value_bool());
+	setter(widget.get_value_bool());
 }
 
 /**
  * Sets a toggle button callback that also toggles a slider on/off
  * The bool value of the widget is passeed to the setter
  */
-void tpreferences::toggle_slider_pair_callback(const std::string& toggle_widget,
-		const std::string& slider_widget, boost::function<void(bool)> setter, twindow& window)
+void tpreferences::toggle_slider_pair_callback(const ttoggle_button& toggle_widget,
+		tslider& slider_widget, boost::function<void(bool)> setter)
 {
-	const bool ison = find_widget<ttoggle_button>(&window, toggle_widget, false).get_value_bool();
+	const bool ison = toggle_widget.get_value_bool();
 	setter(ison);
 
-	find_widget<tslider>(&window, slider_widget, false).set_active(ison);
+	slider_widget.set_active(ison);
 }
 
 /**
  * Sets a slider callback
  * The int value of the widget is passeed to the setter
  */
-void tpreferences::single_slider_callback(const std::string& widget,
-		void (*setter) (int), twindow& window)
+void tpreferences::single_slider_callback(const tslider& widget,
+		boost::function<void(int)> setter)
 {
-	setter(find_widget<tslider>(&window, widget, false).get_value());
+	setter(widget.get_value());
 }
 
 /**
- * Sets a slider callback that also sets a lable to the value of the slider
- * The int value of the widget is passeed to the setter
+ * Sets a combobox callback
  */
-void tpreferences::slider_label_pair_callback(const std::string& slider_widget,
-		const std::string& label_widget, void (*setter) (int), twindow& window)
+void tpreferences::simple_combobox_callback(const tcombobox& widget,
+		boost::function<void(std::string)> setter, std::vector<std::string>& vec)
 {
-	const int value = find_widget<tslider>(&window, slider_widget, false).get_value();
-	setter(value);
+	const unsigned index = widget.get_value();
+	setter(vec[index]);
+}
 
-	find_widget<tscroll_label>(&window, label_widget, false).set_label(lexical_cast<std::string>(value));
+/**
+ * Sets a value label callback
+ */
+template <typename T>
+void tpreferences::status_label_callback(T& parent_widget,
+		tcontrol& label_widget)
+{
+	label_widget.set_label(disambiguate_widget_value(parent_widget));
 }
 
 // Special fullsceen callback
@@ -713,19 +814,23 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 	const bool ison =
 		find_widget<ttoggle_button>(&window, "fullscreen", false).get_value_bool();
 	window.video().set_fullscreen(ison);
-	set_res_list(window);
-	find_widget<tcombobox>(&window, "resolution_set", false).set_active(!ison);
+
+	tcombobox& res_list = find_widget<tcombobox>(&window, "resolution_set", false);
+	set_res_list(res_list, window.video());
+	res_list.set_active(!ison);
 }
 
 void tpreferences::handle_res_select(twindow& window)
 {
-	const int choice = find_widget<tcombobox>(&window, "resolution_set", false).get_value();
+	tcombobox& res_list = find_widget<tcombobox>(&window, "resolution_set", false);
+	const int choice = res_list.get_value();
+
 	if (resolutions_[static_cast<size_t>(choice)] == window.video().current_resolution()) {
 		return;
 	}
 
 	window.video().set_resolution(resolutions_[static_cast<size_t>(choice)]);
-	set_res_list(window);
+	set_res_list(res_list, window.video());
 }
 
 // Special Accelerated Speed slider callback

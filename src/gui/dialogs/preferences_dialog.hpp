@@ -18,7 +18,9 @@
 #include "config.hpp"
 #include "make_enum.hpp"
 #include "gui/dialogs/dialog.hpp"
+#include "gui/widgets/combobox.hpp"
 #include "gui/widgets/toggle_button.hpp"
+#include "gui/widgets/slider.hpp"
 #include "gui/widgets/widget.hpp"
 
 // This file is not named preferences.hpp in order -I conflicts with
@@ -74,46 +76,67 @@ private:
 	void fullscreen_toggle_callback(twindow& window);
 	void accl_speed_slider_callback(twindow& window);
 
+	template <typename T>
 	void setup_single_toggle(
 		  const std::string& widget_id
 		, const bool start_value
-		, void (*callback) (bool)
-		, twindow& window);
+		, boost::function<void(bool)> callback
+		, T& window);
 
+	template <typename T>
 	void setup_toggle_slider_pair(
 		  const std::string& toggle_widget
 		, const std::string& slider_widget
 		, const bool toggle_start_value
 		, const int slider_state_value
 		, boost::function<void(bool)> toggle_callback
-		, void (*slider_callback) (int)
-		, twindow& window);
+		, boost::function<void(int)> slider_callback
+		, T& window);
 
+	template <typename T>
 	void setup_single_slider(
 		  const std::string& widget_id
 		, const int start_value
-		, void (*callback) (int)
-		, twindow& window);
+		, boost::function<void(int)> slider_callback
+		, T& window);
 
-	void setup_slider_label_pair(
-		  const std::string& slider_widget
-		, const std::string& label_widget
-		, const int start_value
-		, void (*callback) (int)
-		, twindow& window);
+	typedef std::pair<std::vector<std::string>, std::vector<std::string> > combo_data;
 
-	void single_toggle_callback(const std::string& widget,
-		void (*setter) (bool), twindow& window);
+	template <typename T>
+	void setup_combobox(
+		  const std::string& widget_id
+		, combo_data options
+		, const unsigned start_value
+		, boost::function<void(std::string)> callback
+		, T& window);
 
-	void toggle_slider_pair_callback(const std::string& toggle_widget,
-		const std::string& slider_widget,
-		boost::function<void(bool)> setter, twindow& window);
+	template <typename T, typename W>
+	void bind_status_label(
+		  T& parent
+		, const std::string& label_id
+		, W& window);
+		
+	template <typename T>
+	void bind_status_label(
+		  tslider& parent
+		, const std::string& label_id
+		, T& window);
 
-	void single_slider_callback(const std::string& widget,
-		void (*setter) (int), twindow& window);
+	void single_toggle_callback(const ttoggle_button& widget,
+		boost::function<void(bool)>);
 
-	void slider_label_pair_callback(const std::string& slider_widget,
-		const std::string& label_widget, void (*setter) (int), twindow& window);
+	void toggle_slider_pair_callback(const ttoggle_button& toggle_widget,
+		tslider& slider_widget, boost::function<void(bool)> setter);
+
+	void single_slider_callback(const tslider& widget,
+		boost::function<void(int)> setter);
+
+	void simple_combobox_callback(const tcombobox& widget,
+		boost::function<void(std::string)> setter, std::vector<std::string>& vec);
+
+	template <typename T>
+	void status_label_callback(T& parent_widget,
+		tcontrol& label_widget);
 
 	// FIXME: remove. It's a dupe of the one in game_preferences.hpp, but that
 	// is unnamed so I can't use it
