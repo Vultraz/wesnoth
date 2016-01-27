@@ -44,6 +44,7 @@
 #include "gui/widgets/settings.hpp"
 #include "gui/widgets/slider.hpp"
 #include "gui/widgets/stacked_widget.hpp"
+#include "gui/widgets/text_box.hpp"
 #include "gui/widgets/toggle_button.hpp"
 #include "gui/widgets/tree_view.hpp"
 #include "gui/widgets/tree_view_node.hpp"
@@ -66,6 +67,7 @@ REGISTER_DIALOG(preferences)
 tpreferences::tpreferences(const config& game_cfg)
 	: resolutions_()
 	, adv_preferences_cfg_()
+	, friend_names_()
 {
 	BOOST_FOREACH(const config& adv, game_cfg.child_range("advanced_preference")) {
 		adv_preferences_cfg_.push_back(adv);
@@ -324,6 +326,96 @@ void tpreferences::bind_status_label(
 		, this, boost::ref(parent), boost::ref(label)));
 }
 
+void tpreferences::setup_friends_list(twindow& window)
+{
+	tlistbox& friends_list = find_widget<tlistbox>(&window, "friends_list", false);
+
+	const std::map<std::string, preferences::acquaintance>& acquaintances = get_acquaintances();
+
+	std::map<std::string, string_map> data;
+
+	find_widget<tbutton>(&window, "remove", false).set_active(!acquaintances.empty());
+
+	if (acquaintances.empty()) {
+		data["friend_icon"]["label"] = "misc/status-neutral.png";
+		data["friend_name"]["label"] = _("Empty list");
+		friends_list.add_row(data);
+
+		return;
+	}
+
+	friends_list.clear();
+	friend_names_.clear();
+
+	typedef std::map<std::string, acquaintance>::const_iterator acq_itor;
+	for (acq_itor i = acquaintances.begin(); i != acquaintances.end(); ++i)
+	{
+		std::string image = "friend.png";
+		std::string descriptor = _("friend");
+		std::string notes;
+
+		if(i->second.get_status() == "ignore") {
+			image = "ignore.png";
+			descriptor = _("ignored");
+		}
+
+		if(!i->second.get_notes().empty()) {
+			notes = " <small>(" + i->second.get_notes() + ")</small>";
+		}
+
+		data["friend_icon"]["label"] = "misc/status-" + image;
+
+		data["friend_name"]["label"] = i->second.get_nick() + notes;
+		data["friend_name"]["use_markup"] = "true";
+
+		data["friend_status"]["label"] = "<small>" + descriptor + "</small>";
+		data["friend_status"]["use_markup"] = "true";
+		friends_list.add_row(data);
+
+		friend_names_.push_back(i->first);
+	}
+}
+
+void tpreferences::add_friend_list_entry(boost::function<bool(std::string, std::string)> setter,
+		ttext_box& textbox, twindow& window)
+{
+	std::string reason;
+	std::string username = textbox.text();
+	size_t pos = username.find_first_of(' ');
+
+	if (pos != std::string::npos) {
+		reason = username.substr(pos + 1);
+		username = username.substr(0, pos);
+	}
+
+	if (setter(username, reason)) {
+		textbox.clear();
+		setup_friends_list(window);
+	} else {
+		gui2::show_transient_error_message(window.video(), _("Invalid username"));
+	}
+}
+
+void tpreferences::remove_friend_list_entry(tlistbox& friends_list, 
+		ttext_box& textbox)
+{
+	std::string to_remove = textbox.text();
+	const int selected_row = std::max(0, friends_list.get_selected_row());
+
+	if (to_remove.empty() && selected_row >= 0) {
+		to_remove = friend_names_[selected_row];
+	}
+
+	if (!to_remove.empty()) {
+		// TODO: Better to remove from a specific relation? <- what does this mean
+		remove_acquaintance(to_remove);
+		textbox.clear();
+
+		friend_names_.erase(friend_names_.begin() + selected_row);
+		friends_list.remove_row(selected_row);
+	}
+}
+
 /**
  * Sets up states and callbacks for each of the widgets
  */
@@ -521,11 +613,35 @@ void tpreferences::initialize_members(twindow& window)
 		lobby_joins(), lobby_joins_, window);
 
 	/** FRIENDS LIST **/
-	// TODO
-	//connect_signal_mouse_left_click(
-	//		  find_widget<tbutton>(&window, "mp_friends", false)
-	//		, boost::bind(&gui2::tadvanced_graphics_options::display
-	//		, boost::ref(window.video())));
+	setup_friends_list(window);
+
+	ttext_box& textbox = find_widget<ttext_box>(&window, "friend_name_box", false);
+	tlistbox& friend_list = find_widget<tlistbox>(&window, "friends_list", false);
+
+	connect_signal_mouse_left_click(
+		find_widget<tbutton>(&window, "add_friend", false), boost::bind(
+			  &tpreferences::add_friend_list_entry
+			, this
+			, add_friend
+			, boost::ref(textbox)
+			, boost::ref(window)));
+
+	connect_signal_mouse_left_click(
+		find_widget<tbutton>(&window, "add_ignored", false), boost::bind(
+			  &tpreferences::add_friend_list_entry
+			, this
+			, add_ignore
+			, boost::ref(textbox)
+			, boost::ref(window)));
+
+	connect_signal_mouse_left_click(
+		find_widget<tbutton>(&window, "remove", false), boost::bind(
+			  &tpreferences::remove_friend_list_entry
+			, this
+			, boost::ref(friend_list)
+			, boost::ref(textbox)));
+
+	friend_list.select_row(0);
 
 	/** ALERTS **/
 	//connect_signal_mouse_left_click(
@@ -724,25 +840,23 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	// TODO: move to constructor?
 	resolutions_ = window.video().get_available_resolutions(true);
 
-	//
-	// Initializes tabs for various pages. This should be done before
-	// setting up the callbacks.
-	//
+	// Initializes tabs for the various pages. This should be done before
+	// setting up the member callbacks.
 	initialize_tabs(window);
 
-	set_visible_page(window, 0, "mp_tab_pager");
-
-	//
-	// We need to establish callbacks before selecting the initial page,
-	// otherwise widgets from other pages cannot be found afterwards.
-	//
+	// Initializes initial values and sets up callbacks. This needs to be
+	// done before selecting the initial page, otherwise widgets from other 
+	// pages cannot be found afterwards.
 	initialize_members(window);
 
 	assert(selector.get_item_count() == pager.get_layer_count());
 
+	// Selects initial tab for each page and the initially displayed main
+	// page. This should be done last after all intilization
+	set_visible_page(window, 0, "mp_tab_pager");
+
 	selector.select_row(0);
 	pager.select_layer(0);
-
 }
 
 void tpreferences::set_visible_page(twindow& window, unsigned int page, const std::string& pager_id)

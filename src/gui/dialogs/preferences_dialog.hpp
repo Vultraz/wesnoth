@@ -21,6 +21,7 @@
 #include "gui/widgets/combobox.hpp"
 #include "gui/widgets/toggle_button.hpp"
 #include "gui/widgets/slider.hpp"
+#include "gui/widgets/text_box.hpp"
 #include "gui/widgets/widget.hpp"
 
 // This file is not named preferences.hpp in order -I conflicts with
@@ -63,6 +64,7 @@ private:
 	/** Initializers */
 	void initialize_members(twindow& window);
 	void initialize_tabs(twindow& window);
+	void setup_friends_list(twindow& window);
 
 	void add_tab(class tlistbox& tab_bar, const std::string& label);
 	void add_pager_row(class tlistbox& selector, const std::string& icon, const std::string& label);
@@ -157,6 +159,12 @@ private:
 		, int& value
 		, ttoggle_button* active);
 
+	void add_friend_list_entry(boost::function<bool(std::string, std::string)> setter,
+		ttext_box& textbox, twindow& window);
+
+	void remove_friend_list_entry(tlistbox& friends_list, 
+		ttext_box& textbox);
+
 	MAKE_ENUM(ADVANCED_PREF_TYPE, 
 		(TOGGLE,  "boolean")
 		(SLIDER,  "int")
@@ -174,6 +182,7 @@ private:
 
 	std::vector<std::pair<int,int> > resolutions_;
 	std::vector<config> adv_preferences_cfg_;
+	std::vector<std::string> friend_names_;
 };
 
 } // namespace gui2
