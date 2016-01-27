@@ -772,7 +772,7 @@ void tpreferences::initialize_members(twindow& window)
 
 				if (pref_name == "advanced_graphic_options") {
 					pref_node.set_callback_state_change(2
-						, boost::bind(gui2::tadvanced_graphics_options::display
+						, boost::bind(show_advanced_graphics_dialog
 						, boost::ref(window.video())));
 				}
 
