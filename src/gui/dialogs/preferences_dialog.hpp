@@ -159,11 +159,11 @@ private:
 		, int& value
 		, ttoggle_button* active);
 
-	void add_friend_list_entry(boost::function<bool(std::string, std::string)> setter,
+	void add_friend_list_entry(const bool is_friend,
 		ttext_box& textbox, twindow& window);
 
 	void remove_friend_list_entry(tlistbox& friends_list, 
-		ttext_box& textbox);
+		ttext_box& textbox, twindow& window);
 
 	MAKE_ENUM(ADVANCED_PREF_TYPE, 
 		(TOGGLE,  "boolean")

@@ -376,7 +376,7 @@ void tpreferences::setup_friends_list(twindow& window)
 	}
 }
 
-void tpreferences::add_friend_list_entry(boost::function<bool(std::string, std::string)> setter,
+void tpreferences::add_friend_list_entry(const bool is_friend,
 		ttext_box& textbox, twindow& window)
 {
 	std::string reason;
@@ -388,32 +388,33 @@ void tpreferences::add_friend_list_entry(boost::function<bool(std::string, std::
 		username = username.substr(0, pos);
 	}
 
-	if (setter(username, reason)) {
-		textbox.clear();
-		setup_friends_list(window);
-	} else {
+	const bool added_sucessfully = is_friend ? 
+		add_friend(username, reason) : 
+		add_ignore(username, reason) ;
+
+	if (!added_sucessfully) {
 		gui2::show_transient_error_message(window.video(), _("Invalid username"));
+		return;
 	}
+
+	textbox.clear();
+	setup_friends_list(window);
 }
 
 void tpreferences::remove_friend_list_entry(tlistbox& friends_list, 
-		ttext_box& textbox)
+		ttext_box& textbox, twindow& window)
 {
 	std::string to_remove = textbox.text();
-	const int selected_row = std::max(0, friends_list.get_selected_row());
 
-	if (to_remove.empty() && selected_row >= 0) {
+	if (to_remove.empty()) {
+		const int selected_row = std::max(0, friends_list.get_selected_row());
 		to_remove = friend_names_[selected_row];
 	}
 
-	if (!to_remove.empty()) {
-		// TODO: Better to remove from a specific relation? <- what does this mean
-		remove_acquaintance(to_remove);
-		textbox.clear();
+	remove_acquaintance(to_remove);
 
-		friend_names_.erase(friend_names_.begin() + selected_row);
-		friends_list.remove_row(selected_row);
-	}
+	textbox.clear();
+	setup_friends_list(window);
 }
 
 /**
@@ -625,16 +626,14 @@ void tpreferences::initialize_members(twindow& window)
 	connect_signal_mouse_left_click(
 		find_widget<tbutton>(&window, "add_friend", false), boost::bind(
 			  &tpreferences::add_friend_list_entry
-			, this
-			, add_friend
+			, this, true
 			, boost::ref(textbox)
 			, boost::ref(window)));
 
 	connect_signal_mouse_left_click(
 		find_widget<tbutton>(&window, "add_ignored", false), boost::bind(
 			  &tpreferences::add_friend_list_entry
-			, this
-			, add_ignore
+			, this, false
 			, boost::ref(textbox)
 			, boost::ref(window)));
 
@@ -643,7 +642,8 @@ void tpreferences::initialize_members(twindow& window)
 			  &tpreferences::remove_friend_list_entry
 			, this
 			, boost::ref(friend_list)
-			, boost::ref(textbox)));
+			, boost::ref(textbox)
+			, boost::ref(window)));
 
 	friend_list.select_row(0);
 
@@ -934,7 +934,7 @@ void tpreferences::fullscreen_toggle_callback(twindow& window)
 	window.video().set_fullscreen(ison);
 
 	tcombobox& res_list = find_widget<tcombobox>(&window, "resolution_set", false);
-	set_res_list(res_list, window.video());
+	set_resolution_list(res_list, window.video());
 	res_list.set_active(!ison);
 }
 
@@ -948,7 +948,7 @@ void tpreferences::handle_res_select(twindow& window)
 	}
 
 	window.video().set_resolution(resolutions_[static_cast<size_t>(choice)]);
-	set_res_list(res_list, window.video());
+	set_resolution_list(res_list, window.video());
 }
 
 // Special Accelerated Speed slider callback
