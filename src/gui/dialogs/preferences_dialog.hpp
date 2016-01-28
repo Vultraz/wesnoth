@@ -58,9 +58,6 @@ private:
 	/** Inherited from tdialog. */
 	void pre_show(CVideo& video, twindow& window);
 
-	/** Inherited from tdialog. */
-	void post_show(twindow& window);
-
 	/** Initializers */
 	void initialize_members(twindow& window);
 	void initialize_tabs(twindow& window);
@@ -83,7 +80,7 @@ private:
 		  const std::string& widget_id
 		, const bool start_value
 		, boost::function<void(bool)> callback
-		, T& window);
+		, T& find_in);
 
 	template <typename T>
 	void setup_toggle_slider_pair(
@@ -93,36 +90,36 @@ private:
 		, const int slider_state_value
 		, boost::function<void(bool)> toggle_callback
 		, boost::function<void(int)> slider_callback
-		, T& window);
+		, T& find_in);
 
 	template <typename T>
 	void setup_single_slider(
 		  const std::string& widget_id
 		, const int start_value
 		, boost::function<void(int)> slider_callback
-		, T& window);
+		, T& find_in);
 
 	typedef std::pair<std::vector<std::string>, std::vector<std::string> > combo_data;
 
 	template <typename T>
 	void setup_combobox(
 		  const std::string& widget_id
-		, combo_data options
+		, combo_data& options
 		, const unsigned start_value
 		, boost::function<void(std::string)> callback
-		, T& window);
+		, T& find_in);
 
 	template <typename T, typename W>
 	void bind_status_label(
 		  T& parent
 		, const std::string& label_id
-		, W& window);
+		, W& find_in);
 		
 	template <typename T>
 	void bind_status_label(
 		  tslider& parent
 		, const std::string& label_id
-		, T& window);
+		, T& find_in);
 
 	void single_toggle_callback(const ttoggle_button& widget,
 		boost::function<void(bool)>);

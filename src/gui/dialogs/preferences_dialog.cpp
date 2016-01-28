@@ -50,6 +50,7 @@
 #include "gui/widgets/tree_view_node.hpp"
 #include "gui/widgets/window.hpp"
 #include "util.hpp"
+#include "utils/foreach.tpp"
 
 #include "gettext.hpp"
 
@@ -150,14 +151,13 @@ static void accel_slider_setter_helper(int speed)
 /**
  * Helper function to refresh resolution list
  */
-static void set_res_list(tcombobox& res_list, CVideo& video)
+static void set_resolution_list(tcombobox& res_list, CVideo& video)
 {
 	const std::vector<std::pair<int,int> > resolutions = video.get_available_resolutions(true);
 
 	std::vector<std::string> options;
-	for (size_t k = 0; k < resolutions.size(); ++k) {
-		std::pair<int, int> const& res = resolutions[k];
-
+	FOREACH(const AUTO & res, resolutions)
+	{
 		std::ostringstream option;
 		option << res.first << utils::unicode_multiplication_sign << res.second;
 
@@ -185,10 +185,10 @@ void tpreferences::setup_single_toggle(
 		  const std::string& widget_id
 		, const bool start_value
 		, boost::function<void(bool)> callback
-		, T& window)
+		, T& find_in)
 {
 	ttoggle_button& widget =
-		find_widget<ttoggle_button>(&window, widget_id, false);
+		find_widget<ttoggle_button>(&find_in, widget_id, false);
 
 	widget.set_value(start_value);
 
@@ -208,12 +208,12 @@ void tpreferences::setup_toggle_slider_pair(
 		, const int slider_state_value
 		, boost::function<void(bool)> toggle_callback
 		, boost::function<void(int)> slider_callback
-		, T& window)
+		, T& find_in)
 {
 	ttoggle_button& button =
-		find_widget<ttoggle_button>(&window, toggle_widget, false);
+		find_widget<ttoggle_button>(&find_in, toggle_widget, false);
 	tslider& slider =
-		find_widget<tslider>(&window, slider_widget, false);
+		find_widget<tslider>(&find_in, slider_widget, false);
 
 	button.set_value(toggle_start_value);
 	slider.set_value(slider_state_value);
@@ -238,9 +238,9 @@ void tpreferences::setup_single_slider(
 		  const std::string& widget_id
 		, const int start_value
 		, boost::function<void(int)> slider_callback
-		, T& window)
+		, T& find_in)
 {
-	tslider& widget = find_widget<tslider>(&window, widget_id, false);
+	tslider& widget = find_widget<tslider>(&find_in, widget_id, false);
 	widget.set_value(start_value);
 
 	connect_signal_notify_modified(widget, boost::bind(
@@ -255,13 +255,13 @@ void tpreferences::setup_single_slider(
 template <typename T>
 void tpreferences::setup_combobox(
 		  const std::string& widget_id
-		, combo_data options
+		, combo_data& options
 		, const unsigned start_value
 		, boost::function<void(std::string)> callback
-		, T& window)
+		, T& find_in)
 {
 	tcombobox& widget =
-		find_widget<tcombobox>(&window, widget_id, false);
+		find_widget<tcombobox>(&find_in, widget_id, false);
 
 	widget.set_use_markup(true);
 	widget.set_values(options.first, start_value);
@@ -302,9 +302,9 @@ template <typename T, typename W>
 void tpreferences::bind_status_label(
 		  T& parent
 		, const std::string& label_id
-		, W& window)
+		, W& find_in)
 {
-	tcontrol& label = find_widget<tcontrol>(&window, label_id, false);
+	tcontrol& label = find_widget<tcontrol>(&find_in, label_id, false);
 	label.set_label(disambiguate_widget_value(parent));
 
 	parent.set_callback_state_change(boost::bind(
@@ -316,9 +316,9 @@ template <typename T>
 void tpreferences::bind_status_label(
 		  tslider& parent
 		, const std::string& label_id
-		, T& window)
+		, T& find_in)
 {
-	tcontrol& label = find_widget<tcontrol>(&window, label_id, false);
+	tcontrol& label = find_widget<tcontrol>(&find_in, label_id, false);
 	label.set_label(lexical_cast<std::string>(parent.get_value()));
 
 	connect_signal_notify_modified(parent, boost::bind(
@@ -514,7 +514,7 @@ void tpreferences::initialize_members(twindow& window)
 
 	res_list.set_use_markup(true);
 	res_list.set_active(!fullscreen());
-	set_res_list(res_list, window.video());
+	set_resolution_list(res_list, window.video());
 
 	res_list.connect_click_handler(
 			  boost::bind(&tpreferences::handle_res_select
@@ -839,7 +839,7 @@ void tpreferences::pre_show(CVideo& /*video*/, twindow& window)
 	add_pager_row(selector, "display.png", _("Prefs section^Display"));
 	add_pager_row(selector, "music.png",  _("Prefs section^Sound"));
 	add_pager_row(selector, "multiplayer.png", _("Prefs section^Multiplayer"));
-	add_pager_row(selector, "advanced.png", _("Advanced section^Advanced"));
+	add_pager_row(selector, "advanced.png", _("Prefs section^Advanced"));
 
 	// TODO: move to constructor?
 	resolutions_ = window.video().get_available_resolutions(true);
@@ -993,10 +993,6 @@ void tpreferences::on_tab_select(twindow& window, const std::string& widget_id)
 	const int selected_row =
 		std::max(0, find_widget<tlistbox>(&window, widget_id, false).get_selected_row());
 	set_visible_page(window, static_cast<unsigned int>(selected_row), (widget_id + "_pager"));
-}
-
-void tpreferences::post_show(twindow& /*window*/)
-{
 }
 
 } // end namespace gui2
