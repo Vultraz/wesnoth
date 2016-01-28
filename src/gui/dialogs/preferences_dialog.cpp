@@ -722,7 +722,7 @@ void tpreferences::initialize_members(twindow& window)
 				setter_widget->set_step_size(
 					option["step"].empty() ? 1 : option["step"].to_int());
 
-				details_grid->swap_child("setter", setter_widget, true);
+				delete details_grid->swap_child("setter", setter_widget, true);
 
 				// Needed to disambiguate overloaded function
 				typedef void (*setter) (const std::string &, int);
@@ -755,7 +755,7 @@ void tpreferences::initialize_members(twindow& window)
 				setter_widget->set_definition("default");
 				setter_widget->set_id("control_combobox");
 
-				details_grid->swap_child("setter", setter_widget, true);
+				delete details_grid->swap_child("setter", setter_widget, true);
 
 				// Needed to disambiguate overloaded function
 				typedef void (*setter) (const std::string &, const std::string &);
