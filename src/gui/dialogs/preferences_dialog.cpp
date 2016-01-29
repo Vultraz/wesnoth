@@ -69,6 +69,7 @@ tpreferences::tpreferences(const config& game_cfg)
 	: resolutions_()
 	, adv_preferences_cfg_()
 	, friend_names_()
+	, last_selected_node_(NULL)
 {
 	BOOST_FOREACH(const config& adv, game_cfg.child_range("advanced_preference")) {
 		adv_preferences_cfg_.push_back(adv);
@@ -789,6 +790,21 @@ void tpreferences::initialize_members(twindow& window)
 				break;
 			}
 		}
+	}
+
+	connect_signal_mouse_left_click(advanced, boost::bind(
+		&tpreferences::node_select_callback, this, boost::ref(advanced)));
+
+	last_selected_node_ = advanced.selected_item();
+}
+
+void tpreferences::node_select_callback(ttree_view& tree)
+{
+	ttree_view_node* last_item = tree.selected_item();
+
+	if(last_selected_node_ != last_item) {
+		last_selected_node_->fold();
+		last_selected_node_ = last_item;
 	}
 }
 

@@ -22,6 +22,7 @@
 #include "gui/widgets/toggle_button.hpp"
 #include "gui/widgets/slider.hpp"
 #include "gui/widgets/text_box.hpp"
+#include "gui/widgets/tree_view_node.hpp"
 #include "gui/widgets/widget.hpp"
 
 // This file is not named preferences.hpp in order -I conflicts with
@@ -137,6 +138,8 @@ private:
 	void status_label_callback(T& parent_widget,
 		tcontrol& label_widget);
 
+	void node_select_callback(ttree_view& tree);
+
 	// FIXME: remove. It's a dupe of the one in game_preferences.hpp, but that
 	// is unnamed so I can't use it
 	enum LOBBY_JOINS { SHOW_NONE, SHOW_FRIENDS, SHOW_ALL };
@@ -180,6 +183,8 @@ private:
 	std::vector<std::pair<int,int> > resolutions_;
 	std::vector<config> adv_preferences_cfg_;
 	std::vector<std::string> friend_names_;
+
+	ttree_view_node* last_selected_node_;
 };
 
 } // namespace gui2
