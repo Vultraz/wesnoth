@@ -34,6 +34,7 @@
 #include "gui/widgets/button.hpp"
 #include "gui/widgets/combobox.hpp"
 #include "gui/widgets/grid.hpp"
+#include "gui/widgets/image.hpp"
 #include "gui/widgets/label.hpp"
 #ifdef GUI2_EXPERIMENTAL_LISTBOX
 #include "gui/widgets/list.hpp"
@@ -774,6 +775,12 @@ void tpreferences::initialize_members(twindow& window)
 
 			case ADVANCED_PREF_TYPE::SPECIAL: {
 				pref_node.clear();
+
+				timage* value_widget = new timage;
+				value_widget->set_definition("default");
+				value_widget->set_label("icons/arrows/short_arrow_right_25.png");
+
+				delete main_grid->swap_child("value", value_widget, true);
 
 				if (pref_name == "advanced_graphic_options") {
 					pref_node.set_callback_state_change(2
