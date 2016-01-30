@@ -98,7 +98,7 @@ static std::string disambiguate_widget_value(T& parent_widget)
 		value = (*widget).get_value_string();
 
 	} else {
-		value = parent_widget.get_value();
+		value = lexical_cast<std::string>(parent_widget.get_value());
 	}
 
 	return value;
