@@ -74,7 +74,7 @@ private:
 
 	void handle_res_select(twindow& window);
 	void fullscreen_toggle_callback(twindow& window);
-	void accl_speed_slider_callback(twindow& window);
+	void accl_speed_slider_callback(tslider& slider);
 
 	template <typename T>
 	void setup_single_toggle(
@@ -185,6 +185,8 @@ private:
 	std::vector<std::string> friend_names_;
 
 	ttree_view_node* last_selected_node_;
+
+	std::vector<t_string> accl_speeds_;
 };
 
 } // namespace gui2

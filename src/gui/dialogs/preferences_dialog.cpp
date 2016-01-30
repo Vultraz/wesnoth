@@ -71,6 +71,7 @@ tpreferences::tpreferences(const config& game_cfg)
 	, adv_preferences_cfg_()
 	, friend_names_()
 	, last_selected_node_(NULL)
+	, accl_speeds_()
 {
 	BOOST_FOREACH(const config& adv, game_cfg.child_range("advanced_preference")) {
 		adv_preferences_cfg_.push_back(adv);
@@ -78,6 +79,23 @@ tpreferences::tpreferences(const config& game_cfg)
 
 	std::sort(adv_preferences_cfg_.begin(), adv_preferences_cfg_.end(), 
 		advanced_preferences_sorter());
+
+	// IMPORTANT: NEVER have trailing zeroes here
+	static const char* const speeds[] = 
+		{ "0.25"
+		, "0.5"
+		, "0.75"
+		, "1"
+		, "1.25"
+		, "1.5"
+		, "1.75"
+		, "2"
+		, "3"
+		, "4"
+		, "8"
+		, "16" };
+
+	accl_speeds_.insert(accl_speeds_.end(), speeds, speeds + 12);
 }
 
 static std::string bool_to_display_string(bool value)
@@ -105,52 +123,6 @@ static std::string disambiguate_widget_value(T& parent_widget)
 	}
 
 	return value;
-}
-
-/**
- * Helper functions to return associative values between accelerated speed
- * values (double) and the setter slider's steps (int).
- *
- * SLIDER AT: 1    2    3    4    5    6    7    8    9    10   11   12
- * SPEED VAL: 0.25 0.50 0.75 1.00 1.25 1.50 1.75 2.00 3.00 4.00 8.00 16.00
- */
-static double int_to_accl_speed(int value)
-{
-	double res = 2;
-
-	if (value >= 1 && value <= 8) {
-		res = 0.25 * value;
-	} else if (value == 9 || value == 10) {
-		res = value - 6;
-	} else if (value == 11) {
-		res = 8;
-	} else if (value == 12) {
-		res = 16;
-	}
-
-	return res;
-}
-
-static int accl_speed_to_int(double value)
-{
-	int res = 2;
-
-	if (value >= 0.25 && value <= 2) {
-		res = value * 4;
-	} else if (value == 3 || value == 4) {
-		res = value + 6;
-	} else if (value == 8) {
-		res = 11;
-	} else if (value == 16) {
-		res = 12;
-	}
-
-	return res;
-}
-
-static void accel_slider_setter_helper(int speed)
-{
-	set_turbo_speed(int_to_accl_speed(speed));
 }
 
 /**
@@ -324,7 +296,7 @@ void tpreferences::bind_status_label(
 		, T& find_in)
 {
 	tcontrol& label = find_widget<tcontrol>(&find_in, label_id, false);
-	label.set_label(lexical_cast<std::string>(parent.get_value()));
+	label.set_label(lexical_cast<std::string>(parent.get_value_label()));
 
 	connect_signal_notify_modified(parent, boost::bind(
 		  &tpreferences::status_label_callback<tslider>
@@ -436,17 +408,34 @@ void tpreferences::initialize_members(twindow& window)
 		scroll_speed(), set_scroll_speed, window);
 
 	/** ACCELERATED SPEED **/
-	setup_toggle_slider_pair("turbo_toggle", "turbo_slider",
-		turbo(), accl_speed_to_int(turbo_speed()),
-		set_turbo, accel_slider_setter_helper, window);
+	ttoggle_button& accl_toggle =
+		find_widget<ttoggle_button>(&window, "turbo_toggle", false);
+	tslider& accl_slider =
+		find_widget<tslider>(&window, "turbo_slider", false);
 
-	find_widget<tscroll_label>(&window, "turbo_value", false).set_label(
-			lexical_cast<std::string>(turbo_speed()));
+	const int selected_speed = std::find(
+		  (accl_speeds_.begin()), accl_speeds_.end(), lexical_cast<std::string>(turbo_speed())) 
+		- (accl_speeds_.begin());
+		
+	accl_slider.set_value_labels(accl_speeds_);
 
-	connect_signal_notify_modified(
-			  find_widget<tslider>(&window, "turbo_slider", false)
-			, boost::bind(&tpreferences::accl_speed_slider_callback
-			, this, boost::ref(window)));
+	const bool is_turbo = turbo();
+
+	accl_toggle.set_value(is_turbo);
+	accl_slider.set_value(selected_speed + 1);
+	accl_slider.set_active(is_turbo);
+
+	connect_signal_mouse_left_click(accl_toggle, boost::bind(
+		  &tpreferences::toggle_slider_pair_callback
+		, this, boost::ref(accl_toggle), boost::ref(accl_slider)
+		, set_turbo));
+
+	connect_signal_notify_modified(accl_slider, boost::bind(
+		  &tpreferences::accl_speed_slider_callback
+		, this
+		, boost::ref(accl_slider)));
+
+	bind_status_label(accl_slider, "turbo_value", window);
 
 	/** SKIP AI MOVES **/
 	setup_single_toggle("skip_ai_moves",
@@ -978,12 +967,10 @@ void tpreferences::handle_res_select(twindow& window)
 }
 
 // Special Accelerated Speed slider callback
-void tpreferences::accl_speed_slider_callback(twindow& window)
+void tpreferences::accl_speed_slider_callback(tslider& slider)
 {
-	const double speed = int_to_accl_speed(
-		find_widget<tslider>(&window, "turbo_slider", false).get_value());
-
-	find_widget<tscroll_label>(&window, "turbo_value", false).set_label(lexical_cast<std::string>(speed));
+	const int index = slider.get_value();
+	set_turbo_speed(lexical_cast<double>(accl_speeds_[index - 1]));
 }
 
 void tpreferences::toggle_radio_callback(
