@@ -97,6 +97,9 @@ static std::string disambiguate_widget_value(T& parent_widget)
 	} else if (tcombobox* widget = dynamic_cast<tcombobox*>(&parent_widget)) {
 		value = (*widget).get_value_string();
 
+	} else if (tslider* widget = dynamic_cast<tslider*>(&parent_widget)) {
+		value = (*widget).get_value_label();
+
 	} else {
 		value = lexical_cast<std::string>(parent_widget.get_value());
 	}
