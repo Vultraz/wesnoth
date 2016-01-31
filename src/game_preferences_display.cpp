@@ -35,7 +35,7 @@ namespace preferences {
 
 void show_preferences_dialog(CVideo& video, const config& game_cfg)
 {
-	gui2::tpreferences dlg(game_cfg);
+	gui2::tpreferences dlg(video, game_cfg);
 	dlg.show(video);
 }
 
