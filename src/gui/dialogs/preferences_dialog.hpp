@@ -178,8 +178,7 @@ private:
 	void status_label_callback(T& parent_widget,
 		tcontrol& label_widget);
 
-	typedef std::pair<ttoggle_button*, int> lobby_radio_toggle;
-	std::vector<lobby_radio_toggle> lobby_joins_;
+	typedef std::vector<std::pair<ttoggle_button*, int> > radio_button_data;
 
 	MAKE_ENUM(ADVANCED_PREF_TYPE, 
 		(TOGGLE,  "boolean")
