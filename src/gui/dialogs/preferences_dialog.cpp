@@ -554,6 +554,12 @@ void tpreferences::initialize_members(twindow& window)
 		idle_anim(), idle_anim_rate(),
 		set_idle_anim, set_idle_anim_rate, window);
 
+	/** FONT SCALING **/
+	tslider& scale_slider = find_widget<tslider>(&window, "scaling_slider", false);
+	scale_slider.set_value(font_scaling()); // This shouldn't be necessary, but it won't work without it...
+	register_integer("scaling_slider", false, font_scaling, set_font_scaling);
+	bind_status_label(scale_slider, "scaling_value", window);
+
 	/** SELECT THEME **/
 	connect_signal_mouse_left_click(
 			find_widget<tbutton>(&window, "choose_theme", false),
