@@ -556,8 +556,7 @@ void tpreferences::initialize_members(twindow& window)
 
 	/** FONT SCALING **/
 	tslider& scale_slider = find_widget<tslider>(&window, "scaling_slider", false);
-	scale_slider.set_value(font_scaling()); // This shouldn't be necessary, but it won't work without it...
-	register_integer("scaling_slider", false, font_scaling, set_font_scaling);
+	setup_single_slider("scaling_slider", font_scaling(), set_font_scaling, window);
 	bind_status_label(scale_slider, "scaling_value", window);
 
 	/** SELECT THEME **/
