@@ -34,7 +34,7 @@ public:
 private:
 	void setup_orb_group(std::string base_id, bool& shown, std::string& color, twindow& window, bool connect = true);
 	void handle_orb_click(ttoggle_button* clicked, const std::vector<ttoggle_button*>& group, std::string& storage);
-	void handle_toggle_click(ttoggle_button* clicked, bool& storage);
+	void handle_toggle_click(bool& storage);
 	void handle_reset_click(twindow& window);
 
 	bool show_unmoved_, show_partial_, show_moved_, show_ally_, show_enemy_;

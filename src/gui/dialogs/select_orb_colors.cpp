@@ -87,7 +87,6 @@ void tselect_orb_colors::setup_orb_group(std::string base_id, bool& shown, std::
 		event::connect_signal_mouse_left_click(toggle, boost::bind(
 			&tselect_orb_colors::handle_toggle_click,
 			this,
-			&toggle,
 			boost::ref(shown)
 		));
 	}
@@ -132,7 +131,7 @@ void tselect_orb_colors::handle_orb_click(ttoggle_button* clicked, const std::ve
 	clicked->set_value_bool(true);
 }
 
-void tselect_orb_colors::handle_toggle_click(ttoggle_button* clicked, bool& storage)
+void tselect_orb_colors::handle_toggle_click(bool& storage)
 {
 	storage = !storage;
 }
