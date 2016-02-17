@@ -30,6 +30,7 @@
 #include "gui/dialogs/advanced_graphics_options.hpp"
 #include "gui/dialogs/game_cache_options.hpp"
 #include "gui/dialogs/mp_alerts_options.hpp"
+#include "gui/dialogs/select_orb_colors.hpp"
 
 #include "gui/dialogs/helper.hpp"
 #include "gui/dialogs/transient_message.hpp"
@@ -79,7 +80,6 @@ const std::string bool_to_display_string(bool value)
 
 namespace gui2 {
 
-// TODO: probably should use a namespace alias instead
 using namespace preferences;
 
 REGISTER_DIALOG(preferences)
@@ -362,6 +362,18 @@ void tpreferences::add_friend_list_entry(const bool is_friend,
 	setup_friends_list(window);
 }
 
+void tpreferences::edit_friend_list_entry(tlistbox& friends,
+		ttext_box& textbox)
+{
+	int sel = friends.get_selected_row();
+	if(sel < 0) {
+		return;
+	}
+	std::map<std::string, preferences::acquaintance>::const_iterator who = get_acquaintances().begin();
+	std::advance(who, sel);
+	textbox.set_value(who->second.get_nick() + " " + who->second.get_notes());
+}
+
 void tpreferences::remove_friend_list_entry(tlistbox& friends_list, 
 		ttext_box& textbox, twindow& window)
 {
@@ -542,6 +554,11 @@ void tpreferences::initialize_members(twindow& window)
 		idle_anim(), idle_anim_rate(),
 		set_idle_anim, set_idle_anim_rate, window);
 
+	/** FONT SCALING **/
+	tslider& scale_slider = find_widget<tslider>(&window, "scaling_slider", false);
+	setup_single_slider("scaling_slider", font_scaling(), set_font_scaling, window);
+	bind_status_label(scale_slider, "scaling_value", window);
+
 	/** SELECT THEME **/
 	connect_signal_mouse_left_click(
 			find_widget<tbutton>(&window, "choose_theme", false),
@@ -637,6 +654,12 @@ void tpreferences::initialize_members(twindow& window)
 			boost::ref(friend_list),
 			boost::ref(textbox),
 			boost::ref(window)));
+
+	friend_list.set_callback_value_change(boost::bind(
+		&tpreferences::edit_friend_list_entry,
+		this,
+		boost::ref(friend_list),
+		boost::ref(textbox)));
 
 	friend_list.select_row(0);
 
@@ -811,10 +834,10 @@ void tpreferences::on_advanced_prefs_list_select(tlistbox& list, twindow& window
 	if(selected_type == ADVANCED_PREF_TYPE::SPECIAL) {
 		if (selected_field == "advanced_graphic_options") {
 			gui2::tadvanced_graphics_options::display(window.video());
-		}
-
-		if (selected_field == "orb_color") {
-			// TODO
+		} else if (selected_field == "orb_color") {
+			gui2::tselect_orb_colors::display(window.video());
+		} else {
+			DBG_GUI_L << "Invalid or unimplemented custom advanced prefs option: " << selected_field << "\n";
 		}
 
 		// Add more options here as needed
