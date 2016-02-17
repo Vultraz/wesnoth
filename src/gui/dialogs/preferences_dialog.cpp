@@ -80,7 +80,6 @@ const std::string bool_to_display_string(bool value)
 
 namespace gui2 {
 
-// TODO: probably should use a namespace alias instead
 using namespace preferences;
 
 REGISTER_DIALOG(preferences)
@@ -363,7 +362,7 @@ void tpreferences::add_friend_list_entry(const bool is_friend,
 }
 
 void tpreferences::edit_friend_list_entry(tlistbox& friends,
-		ttext_box& textbox, twindow& window)
+		ttext_box& textbox, twindow&)
 {
 	int sel = friends.get_selected_row();
 	if(sel < 0) {
