@@ -659,8 +659,7 @@ void tpreferences::initialize_members(twindow& window)
 		&tpreferences::edit_friend_list_entry,
 		this,
 		boost::ref(friend_list),
-		boost::ref(textbox),
-		boost::ref(window)));
+		boost::ref(textbox)));
 
 	friend_list.select_row(0);
 
