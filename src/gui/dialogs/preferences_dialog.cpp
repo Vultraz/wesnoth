@@ -362,7 +362,7 @@ void tpreferences::add_friend_list_entry(const bool is_friend,
 }
 
 void tpreferences::edit_friend_list_entry(tlistbox& friends,
-		ttext_box& textbox, twindow&)
+		ttext_box& textbox)
 {
 	int sel = friends.get_selected_row();
 	if(sel < 0) {
