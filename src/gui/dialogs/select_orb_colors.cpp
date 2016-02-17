@@ -25,15 +25,12 @@
 #include "gui/widgets/window.hpp"
 
 #include "preferences.hpp"
+#include "game_config.hpp"
 
 #include <boost/bind.hpp>
 
 namespace gui2 {
 REGISTER_DIALOG(select_orb_colors);
-
-const char* const tselect_orb_colors::allowed_colors[] = {
-	"brightgreen", "brightorange", "red"
-};
 
 tselect_orb_colors::tselect_orb_colors()
 	: show_unmoved_(preferences::show_unmoved_orb())
@@ -67,7 +64,7 @@ void tselect_orb_colors::pre_show(CVideo&, twindow& window)
 void tselect_orb_colors::display(CVideo& video)
 {
 	tselect_orb_colors dialog;
-	if(dialog.show(video) == twindow::OK) {
+	if(dialog.show(video)) {
 		preferences::set_show_unmoved_orb(dialog.show_unmoved_);
 		preferences::set_show_partial_orb(dialog.show_partial_);
 		preferences::set_show_moved_orb(dialog.show_moved_);
@@ -77,7 +74,7 @@ void tselect_orb_colors::display(CVideo& video)
 		preferences::set_unmoved_color(dialog.unmoved_);
 		preferences::set_partial_color(dialog.partial_);
 		preferences::set_moved_color(dialog.moved_);
-		preferences::set_allied_color(dialog.moved_);
+		preferences::set_allied_color(dialog.ally_);
 		preferences::set_enemy_color(dialog.enemy_);
 	}
 }
@@ -142,29 +139,17 @@ void tselect_orb_colors::handle_toggle_click(ttoggle_button* clicked, bool& stor
 
 void tselect_orb_colors::handle_reset_click(twindow& window)
 {
-	preferences::clear("show_unmoved_orb");
-	preferences::clear("show_partial_orb");
-	preferences::clear("show_moved_orb");
-	preferences::clear("show_ally_orb");
-	preferences::clear("show_enemy_orb");
+	show_unmoved_ = game_config::show_unmoved_orb;
+	show_partial_ = game_config::show_partial_orb;
+	show_moved_ = game_config::show_moved_orb;
+	show_ally_ = game_config::show_ally_orb;
+	show_enemy_ = game_config::show_enemy_orb;
 	
-	preferences::clear("unmoved_orb_color");
-	preferences::clear("partial_orb_color");
-	preferences::clear("moved_orb_color");
-	preferences::clear("ally_orb_color");
-	preferences::clear("enemy_orb_color");
-	
-	show_unmoved_ = preferences::show_unmoved_orb();
-	show_partial_ = preferences::show_partial_orb();
-	show_moved_ = preferences::show_moved_orb();
-	show_ally_ = preferences::show_allied_orb();
-	show_enemy_ = preferences::show_enemy_orb();
-	
-	unmoved_ = preferences::unmoved_color();
-	partial_ = preferences::partial_color();
-	moved_ = preferences::moved_color();
-	ally_ = preferences::allied_color();
-	enemy_ = preferences::enemy_color();
+	unmoved_ = game_config::colors::unmoved_orb_color;
+	partial_ = game_config::colors::partial_orb_color;
+	moved_ = game_config::colors::moved_orb_color;
+	ally_ = game_config::colors::ally_orb_color;
+	enemy_ = game_config::colors::enemy_orb_color;
 	
 	setup_orb_group("unmoved", show_unmoved_, unmoved_, window, false);
 	setup_orb_group("partial", show_partial_, partial_, window, false);

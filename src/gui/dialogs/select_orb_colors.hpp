@@ -32,7 +32,6 @@ public:
 	 */
 	static void display(CVideo& video);
 private:
-	static const char* const allowed_colors[10];
 	void setup_orb_group(std::string base_id, bool& shown, std::string& color, twindow& window, bool connect = true);
 	void handle_orb_click(ttoggle_button* clicked, const std::vector<ttoggle_button*>& group, std::string& storage);
 	void handle_toggle_click(ttoggle_button* clicked, bool& storage);
