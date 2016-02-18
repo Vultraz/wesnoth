@@ -19,12 +19,16 @@
 #include "addon/info.hpp"
 #include "addon/state.hpp"
 
+#include "desktop/clipboard.hpp"
+#include "desktop/open.hpp"
+
 #include "gettext.hpp"
 #include "gui/auxiliary/filter.hpp"
 #include "gui/auxiliary/find_widget.tpp"
 #include "gui/dialogs/helper.hpp"
 #include "gui/widgets/button.hpp"
 #include "gui/widgets/label.hpp"
+#include "gui/widgets/stacked_widget.hpp"
 #include "gui/widgets/drawing.hpp"
 #include "gui/widgets/image.hpp"
 #ifdef GUI2_EXPERIMENTAL_LISTBOX
@@ -39,10 +43,9 @@
 #include "gui/widgets/window.hpp"
 #include "utils/foreach.tpp"
 #include "serialization/string_utils.hpp"
-
+#include "formula_string_utils.hpp"
 #include "marked-up_text.hpp"
 #include "font.hpp"
-#include "formatter.hpp"
 #include "preferences.hpp"
 #include "strftime.hpp"
 
@@ -244,36 +247,133 @@ static std::string describe_addon_status(const addon_tracking_info& info)
 	std::string tc, tx;
 
 	switch(info.state) {
-	case ADDON_NONE:
-		tc = "a69275";
-		tx = info.can_publish ? _("addon_state^Published, not installed") : _("addon_state^Not installed");
-		break;
-	case ADDON_INSTALLED:
-	case ADDON_NOT_TRACKED:
-		// Consider add-ons without version information as installed
-		// for the main display. Their Description info should elaborate
-		// on their status.
-		tc = font::color2hexa(font::GOOD_COLOR);
-		tx = info.can_publish ? _("addon_state^Published") : _("addon_state^Installed");
-		break;
-	case ADDON_INSTALLED_UPGRADABLE:
-		tc = font::color2hexa(font::YELLOW_COLOR);
-		tx = info.can_publish ? _("addon_state^Published, upgradable") : _("addon_state^Installed, upgradable");
-		break;
-	case ADDON_INSTALLED_OUTDATED:
-		tc = "FF7F00";
-		tx = info.can_publish ? _("addon_state^Published, outdated on server") : _("addon_state^Installed, outdated on server");
-		break;
-	case ADDON_INSTALLED_BROKEN:
-		tc = font::color2hexa(font::BAD_COLOR);
-		tx = info.can_publish ? _("addon_state^Published, broken") : _("addon_state^Installed, broken");
-		break;
-	default:
-		tc = font::color2hexa(font::GRAY_COLOR);
-		tx = _("addon_state^Unknown");
+		case ADDON_NONE:
+			tc = "#a69275";
+			tx = info.can_publish ? _("addon_state^Published, not installed") : _("addon_state^Not installed");
+			break;
+
+		case ADDON_INSTALLED:
+		case ADDON_NOT_TRACKED:
+			// Consider add-ons without version information as installed
+			// for the main display. Their Description info should elaborate
+			// on their status.
+			tc = "#00ff00";
+			tx = info.can_publish ? _("addon_state^Published") : _("addon_state^Installed");
+			break;
+
+		case ADDON_INSTALLED_UPGRADABLE:
+			tc = "#ffff00";
+			tx = info.can_publish ? _("addon_state^Published, upgradable") : _("addon_state^Installed, upgradable");
+			break;
+
+		case ADDON_INSTALLED_OUTDATED:
+			tc = "#ff7f00";
+			tx = info.can_publish ? _("addon_state^Published, outdated on server") : _("addon_state^Installed, outdated on server");
+			break;
+
+		case ADDON_INSTALLED_BROKEN:
+			tc = "#ff0000";
+			tx = info.can_publish ? _("addon_state^Published, broken") : _("addon_state^Installed, broken");
+			break;
+
+		default:
+			tc = "#777777";
+			tx = _("addon_state^Unknown");
 	}
 
-	return (formatter() << "<span color='#" << tc << "'>" << tx << "</span>").str();
+	return "<span color='" + tc + "'>" + tx + "</span>";
+}
+
+static std::string colorify_addon_state_string(const std::string& str,
+										const addon_tracking_info& state)
+{
+	std::string colorname = "";
+
+	switch(state.state) {
+		case ADDON_NONE:
+			return str;
+		case ADDON_INSTALLED:
+		case ADDON_NOT_TRACKED:
+			colorname = "#00ff00"; // GOOD_COLOR
+			break;
+		case ADDON_INSTALLED_UPGRADABLE:
+			colorname = "#ffff00"; // YELLOW_COLOR/color_upgradable
+			break;
+		case ADDON_INSTALLED_OUTDATED:
+			colorname = "#ff7f00"; // <255,127,0>/color_outdated
+			break;
+		case ADDON_INSTALLED_BROKEN:
+			colorname = "#ff0000"; // BAD_COLOR
+			break;
+		default:
+			colorname = "#777777"; // GRAY_COLOR
+			break;
+	}
+
+	return "<span color='" + colorname + "'>" + str + "</span>";
+}
+
+static std::string describe_addon_state_info(const addon_tracking_info& state)
+{
+	std::string s;
+
+	utils::string_map i18n_symbols;
+	i18n_symbols["local_version"] = state.installed_version.str();
+
+	switch(state.state) {
+		case ADDON_NONE:
+			if(!state.can_publish) {
+				s = _("addon_state^Not installed");
+			} else {
+				s = _("addon_state^Published, not installed");
+			}
+			break;
+		case ADDON_INSTALLED:
+			if(!state.can_publish) {
+				s = _("addon_state^Installed");
+			} else {
+				s = _("addon_state^Published");
+			}
+			break;
+		case ADDON_NOT_TRACKED:
+			if(!state.can_publish) {
+				s = _("addon_state^Installed, not tracking local version");
+			} else {
+				// Published add-ons often don't have local status information,
+				// hence untracked. This should be considered normal.
+				s = _("addon_state^Published, not tracking local version");
+			}
+			break;
+		case ADDON_INSTALLED_UPGRADABLE: {
+			const std::string vstr
+					= !state.can_publish
+							  ? _("addon_state^Installed ($local_version|), "
+								  "upgradable")
+							  : _("addon_state^Published ($local_version| "
+								  "installed), upgradable");
+			s = utils::interpolate_variables_into_string(vstr, &i18n_symbols);
+		} break;
+		case ADDON_INSTALLED_OUTDATED: {
+			const std::string vstr
+					= !state.can_publish
+							  ? _("addon_state^Installed ($local_version|), "
+								  "outdated on server")
+							  : _("addon_state^Published ($local_version| "
+								  "installed), outdated on server");
+			s = utils::interpolate_variables_into_string(vstr, &i18n_symbols);
+		} break;
+		case ADDON_INSTALLED_BROKEN:
+			if(!state.can_publish) {
+				s = _("addon_state^Installed, broken");
+			} else {
+				s = _("addon_state^Published, broken");
+			}
+			break;
+		default:
+			s = _("addon_state^Unknown");
+	}
+
+	return colorify_addon_state_string(s, state);
 }
 
 void taddon_list::pre_show(CVideo& /*video*/, twindow& window)
@@ -376,6 +476,31 @@ void taddon_list::pre_show(CVideo& /*video*/, twindow& window)
 				dialog_callback<taddon_list, &taddon_list::on_addon_select>);
 #endif
 
+		tbutton& url_go_button = find_widget<tbutton>(&window, "url_go", false);
+		tbutton& url_copy_button = find_widget<tbutton>(&window, "url_copy", false);
+		ttext_box& url_textbox = find_widget<ttext_box>(&window, "url", false);
+
+		url_textbox.set_active(false);
+
+		if (!desktop::clipboard::available()) {
+			url_copy_button.set_active(false);
+			url_copy_button.set_tooltip(_("Clipboard support not found, contact your packager"));
+		}
+
+		if(!desktop::open_object_is_supported()) {
+			// No point in displaying the button on platforms that can't do
+			// open_object().
+			url_go_button.set_visible(tcontrol::tvisible::invisible);
+		}
+
+		//connect_signal_mouse_left_click(
+		//		url_go_button,
+		//		boost::bind(&taddon_description::browse_url_callback, this));
+
+		//connect_signal_mouse_left_click(
+		//		url_copy_button,
+		//		boost::bind(&taddon_description::copy_url_callback, this));
+
 		on_addon_select(window);
 	}
 }
@@ -398,6 +523,29 @@ static std::string format_addon_time(time_t time)
 	return utils::unicode_em_dash;
 }
 
+/**
+ * Retrieves an element from the given associative container or dies in some
+ * way.
+ *
+ * It fails an @a assert() check or throws an exception if the requested element
+ * does not exist.
+ *
+ * @return An element from the container that is guranteed to have existed
+ *         before running this function.
+ */
+template <typename MapT>
+static typename MapT::mapped_type const& const_at(typename MapT::key_type const& key,
+										   MapT const& map)
+{
+	typename MapT::const_iterator it = map.find(key);
+	if(it == map.end()) {
+		assert(it != map.end());
+		throw std::out_of_range(
+				"const_at()"); // Shouldn't get here without disabling assert()
+	}
+	return it->second;
+}
+
 void taddon_list::on_addon_select(twindow& window)
 {
 	const int index = find_widget<tlistbox>(&window, "addons", false).get_selected_row();
@@ -413,13 +561,22 @@ void taddon_list::on_addon_select(twindow& window)
 	find_widget<tcontrol>(&window, "type", false).set_label(info.display_type());
 
 	tcontrol& status = find_widget<tcontrol>(&window, "status", false);
-	status.set_label(describe_addon_status(tracking_info_[info.id]));
+	status.set_label(describe_addon_state_info(tracking_info_[info.id]));
 	status.set_use_markup(true);
 
 	find_widget<tcontrol>(&window, "size", false).set_label(size_display_string(info.size));
 	find_widget<tcontrol>(&window, "downloads", false).set_label(lexical_cast<std::string>(info.downloads));
 	find_widget<tcontrol>(&window, "created", false).set_label(format_addon_time(info.created));
 	find_widget<tcontrol>(&window, "updated", false).set_label(format_addon_time(info.updated));
+
+	const std::string& feedback_url = info.feedback_url;
+
+	if(!feedback_url.empty()) {
+		find_widget<tstacked_widget>(&window, "feedback_stack", false).select_layer(1);
+		find_widget<ttext_box>(&window, "url", false).set_value(feedback_url);
+	} else {
+		find_widget<tstacked_widget>(&window, "feedback_stack", false).select_layer(0);
+	}
 }
 
 void taddon_list::create_campaign(tpane& pane, const config& campaign)
