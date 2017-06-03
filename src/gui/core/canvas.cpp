@@ -721,6 +721,8 @@ void rectangle_shape::draw(
 			h - (border_thickness_ * 2)
 		};
 
+		//sdl::scale_rect_by_dpi(area);
+
 		SDL_RenderFillRect(renderer, &area);
 	}
 
@@ -732,6 +734,8 @@ void rectangle_shape::draw(
 			w - (i * 2),
 			h - (i * 2)
 		};
+
+ 		//sdl::scale_rect_by_dpi(dimensions);
 
 		set_renderer_color(renderer, border_color_(variables));
 
@@ -1185,6 +1189,8 @@ void image_shape::draw(
 	dst_clip.w = w ? w : surf->w;
 	dst_clip.h = h ? h : surf->h;
 
+	//sdl::scale_rect_by_dpi(dst_clip);
+
 	/* NOTE: we cannot use SDL_UpdateTexture to copy the surface pixel data directly to the canvas texture
 	 * since no alpha blending occurs; values (even pure alpha) totally overwrite the underlying pixel data.
 	 *
@@ -1382,6 +1388,7 @@ void text_shape::draw(
 	}
 
 	SDL_Rect dst = sdl::create_rect(x, y, surf->w, surf->h);
+	//sdl::scale_rect_by_dpi(dst);
 
 	/* NOTE: we cannot use SDL_UpdateTexture to copy the surface pixel data directly to the canvas texture
 	 * since no alpha blending occurs; values (even pure alpha) totally overwrite the underlying pixel data.

@@ -15,6 +15,7 @@
 #include "gui/core/point.hpp"
 #include "sdl/rect.hpp"
 #include "video.hpp"
+#include <iostream>
 
 namespace sdl
 {
@@ -73,6 +74,62 @@ void fill_rectangle(const SDL_Rect& rect, const color_t& color)
 
 	SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 	SDL_RenderFillRect(renderer, &rect);
+}
+
+
+
+void scale_rect_by_dpi(SDL_Rect& input)
+{
+	CVideo& video = CVideo::get_singleton();
+
+	float scale_h, scale_v;
+	std::tie(scale_h, scale_v) = video.get_dpi_scale_factor();
+
+	const int screen_w = video.getx();
+	const int screen_h = video.gety();
+
+//	const int center_x = input.x + (input.w / 2);
+	//const int center_y = input.y + (input.h / 2);
+	const int old_w = input.w;
+	const int old_h = input.h;
+
+	const float lower_scale = 96.0f / 240.0f;
+
+	//input.x *= scale_h;
+	//input.y *= scale_v;
+
+	input.w *= scale_h;
+	input.h *= scale_v;
+
+	///input.x /= lower_scale;
+	///input.y /= lower_scale;
+
+	//input.w /= lower_scale;
+	//input.h /= lower_scale;
+
+	//const int w_diff = (input.x + input.w) - screen_w;
+	//input.x -= std::abs(input.w - screen_x);
+	//input.y -= std::abs(input.h - screen_y);
+
+	//input.x -= (input.x / scale_h);
+	//input.y -= (input.y / scale_v);
+
+	//input.x = std::min<int>(input.x * scale_h, CVideo::get_singleton().getx());
+	//input.y = std::min<int>(input.y * scale_v, CVideo::get_singleton().gety());
+
+	//input.w = std::min<int>(input.w * scale_h, screen_w);
+	//input.h = std::min<int>(input.h * scale_v, screen_h);
+
+	//input.x -= ;
+//	input.y -= ;
+
+//	if(input.x + input.w > screen_w) {
+//		input.x -= ((input.x + input.w) - screen_w) * scale_h;
+//	}
+
+//	if(input.y + input.h > screen_h) {
+//		input.y -= ((input.y + input.h) - screen_h) * scale_v;
+//	}
 }
 
 } // namespace sdl

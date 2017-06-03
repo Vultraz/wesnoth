@@ -51,6 +51,8 @@ window::window(const std::string& title,
 						 false);
 	}
 
+	SDL_RenderSetIntegerScale(*this, SDL_TRUE);
+
 	// Set default blend mode to blend.
 	SDL_SetRenderDrawBlendMode(*this, SDL_BLENDMODE_BLEND);
 

@@ -119,6 +119,11 @@ inline void fill_surface_rect(surface& dst, SDL_Rect* dst_rect, const Uint32 col
 	SDL_FillRect(dst, dst_rect, color);
 }
 
+/**
+ * Helper function to scale the provided coordinates by the current DPI scaling factor.
+ */
+void scale_rect_by_dpi(SDL_Rect& input);
+
 } // namespace sdl
 
 bool operator==(const SDL_Rect& a, const SDL_Rect& b);

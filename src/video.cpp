@@ -217,7 +217,7 @@ void CVideo::init_window()
 	int video_flags = 0;
 
 	// Add any more default flags here
-	video_flags |= SDL_WINDOW_RESIZABLE;
+	video_flags |= SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE;
 
 	if(preferences::fullscreen()) {
 		video_flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -245,6 +245,16 @@ void CVideo::init_window()
 	if(frameBuffer) {
 		image::set_pixel_format(frameBuffer->format);
 	}
+	
+	float scale_h, scale_v;
+	std::tie(scale_h, scale_v) = get_dpi_scale_factor();
+
+	const int sw = getx() * scale_h;
+	const int sh = gety() * scale_v;
+
+	std::cerr << sw << ", " << sh << std::endl;
+
+//	SDL_RenderSetLogicalSize(*window, sw, sh);
 }
 
 void CVideo::setMode(int x, int y, const MODE_EVENT mode)

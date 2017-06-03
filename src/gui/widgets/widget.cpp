@@ -375,7 +375,9 @@ public:
 		: renderer_(*CVideo::get_singleton().get_window())
 	{
 		// Set viewport.
-		const SDL_Rect dst_rect = widget.calculate_blitting_rectangle(x_offset, y_offset);
+		SDL_Rect dst_rect = widget.calculate_blitting_rectangle(x_offset, y_offset);
+		sdl::scale_rect_by_dpi(dst_rect);
+	
 		SDL_RenderSetViewport(renderer_, &dst_rect);
 
 		// Set clip rect, if appropriate.
@@ -394,6 +396,7 @@ public:
 		clip_rect.y -= dst_rect.y;
 #endif
 
+	//	sdl::scale_rect_by_dpi(clip_rect);
 		SDL_RenderSetClipRect(renderer_, &clip_rect);
 	}
 
