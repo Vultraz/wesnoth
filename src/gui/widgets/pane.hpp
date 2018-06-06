@@ -41,11 +41,10 @@ class pane : public widget
 public:
 	struct item
 	{
-
 		unsigned id;
 		std::map<std::string, std::string> tags;
 
-		grid* item_grid;
+		grid_ptr_t item_grid;
 	};
 
 	typedef std::function<bool(const item&, const item&)> compare_functor_t;
@@ -59,9 +58,9 @@ private:
 	explicit pane(const implementation::builder_pane& builder);
 
 public:
-	static pane* build(const implementation::builder_pane& builder);
+	static std::shared_ptr<pane> build(const implementation::builder_pane& builder);
 
-	/**
+	/*
 	 * Creates a new item.
 	 */
 	unsigned create_item(const std::map<std::string, string_map>& item_data,
@@ -195,9 +194,9 @@ struct builder_pane : public builder_widget
 {
 	explicit builder_pane(const config& cfg);
 
-	widget* build() const;
+	virtual widget_ptr_t build() const override;
 
-	widget* build(const replacements_map& replacements) const;
+	virtual widget_ptr_t build(const replacements_map& replacements) const override;
 
 	placer_base::tgrow_direction grow_direction;
 

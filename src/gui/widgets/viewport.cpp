@@ -98,10 +98,10 @@ viewport::~viewport()
 	}
 }
 
-viewport* viewport::build(const implementation::builder_viewport& builder,
+std::shared_ptr<viewport> viewport::build(const implementation::builder_viewport& builder,
 							const builder_widget::replacements_map& replacements)
 {
-	return new viewport(builder, replacements);
+	return std::shared_ptr<viewport>(new viewport(builder, replacements));
 }
 
 void viewport::place(const point& origin, const point& size)
@@ -211,12 +211,12 @@ builder_viewport::builder_viewport(const config& cfg)
 {
 }
 
-widget* builder_viewport::build() const
+widget_ptr_t builder_viewport::build() const
 {
 	return build(replacements_map());
 }
 
-widget* builder_viewport::build(const replacements_map& replacements) const
+widget_ptr_t builder_viewport::build(const replacements_map& replacements) const
 {
 	return viewport::build(*this, replacements);
 }

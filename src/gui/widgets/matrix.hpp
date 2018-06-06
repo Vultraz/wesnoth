@@ -104,7 +104,7 @@ private:
 	explicit matrix(const implementation::builder_matrix& builder);
 
 public:
-	static matrix* build(const implementation::builder_matrix& builder);
+	static std::shared_ptr<matrix> build(const implementation::builder_matrix& builder);
 
 	/***** ***** ***** ***** Item handling. ***** ***** ****** *****/
 
@@ -247,7 +247,7 @@ struct builder_matrix : public builder_styled_widget
 
 	using builder_styled_widget::build;
 
-	widget* build() const;
+	virtual widget_ptr_t build() const override;
 
 	scrollbar_container::scrollbar_mode vertical_scrollbar_mode;
 	scrollbar_container::scrollbar_mode horizontal_scrollbar_mode;

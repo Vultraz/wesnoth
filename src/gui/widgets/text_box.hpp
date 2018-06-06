@@ -318,7 +318,7 @@ public:
 
 	using builder_styled_widget::build;
 
-	widget* build() const;
+	virtual widget_ptr_t build() const override;
 
 	std::string history;
 

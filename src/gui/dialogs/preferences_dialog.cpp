@@ -627,104 +627,108 @@ void preferences_dialog::post_build(window& window)
 		}
 
 		switch(pref_type.v) {
-			case ADVANCED_PREF_TYPE::TOGGLE: {
-				//main_grid->remove_child("setter");
+		case ADVANCED_PREF_TYPE::TOGGLE: {
+			//main_grid->remove_child("setter");
 
-				toggle_box.set_visible(widget::visibility::visible);
-				toggle_box.set_value(get(pref_name, option["default"].to_bool()));
+			toggle_box.set_visible(widget::visibility::visible);
+			toggle_box.set_value(get(pref_name, option["default"].to_bool()));
 
-				// We need to bind a lambda here since preferences::set is overloaded.
-				// A lambda alone would be more verbose because it'd need to specify all the parameters.
-				connect_signal_mouse_left_click(toggle_box, std::bind(
-					[&, pref_name]() { set(pref_name, toggle_box.get_value_bool()); }
-				));
+			// We need to bind a lambda here since preferences::set is overloaded.
+			// A lambda alone would be more verbose because it'd need to specify all the parameters.
+			connect_signal_mouse_left_click(toggle_box,
+				std::bind([&, pref_name]() { set(pref_name, toggle_box.get_value_bool()); } ));
 
-				gui2::bind_status_label<toggle_button>(
-					main_grid, "value_toggle", default_status_value_getter<toggle_button>, "value");
+			gui2::bind_status_label<toggle_button>(
+				main_grid, "value_toggle", default_status_value_getter<toggle_button>, "value");
 
-				break;
-			}
+			break;
+		}
 
-			case ADVANCED_PREF_TYPE::SLIDER: {
-				slider* setter_widget = build_single_widget_instance<slider>("slider", config {"definition", "minimal"});
-				setter_widget->set_id("setter");
-				// Maximum must be set first or this will assert
-				setter_widget->set_value_range(option["min"].to_int(), option["max"].to_int());
-				setter_widget->set_step_size(option["step"].to_int(1));
+		case ADVANCED_PREF_TYPE::SLIDER: {
+			config w_data {
+				"slider", config {
+					"id", "setter",
+					"definition", "minimal",
+					"minimum_value", option["min"].to_int(),
+					"maximum_value", option["max"].to_int(),
+					"step_size", option["step"].to_int(1)
+				}
+			};
 
-				details_grid.swap_child("setter", setter_widget, true);
+			details_grid.swap_child("setter", create_widget_builder(w_data)->build(), true);
+			auto& slider_w = find_widget<slider>(&details_grid, "setter", false);
 
-				slider& slide = find_widget<slider>(&details_grid, "setter", false);
+			slider_w.set_value(lexical_cast_default<int>(get(pref_name), option["default"].to_int()));
 
-				slide.set_value(lexical_cast_default<int>(get(pref_name), option["default"].to_int()));
+			// We need to bind a lambda here since preferences::set is overloaded.
+			// A lambda alone would be more verbose because it'd need to specify all the parameters.
+			connect_signal_notify_modified(slider_w,
+				std::bind([&, pref_name]() { set(pref_name, slider_w.get_value()); } ));
 
-				// We need to bind a lambda here since preferences::set is overloaded.
-				// A lambda alone would be more verbose because it'd need to specify all the parameters.
-				connect_signal_notify_modified(slide, std::bind(
-					[&, pref_name]() { set(pref_name, slide.get_value()); }
-				));
+			gui2::bind_status_label<slider>(main_grid, "setter", default_status_value_getter<slider>, "value");
+			break;
+		}
 
-				gui2::bind_status_label<slider>(main_grid, "setter", default_status_value_getter<slider>, "value");
+		case ADVANCED_PREF_TYPE::COMBO: {
+			std::vector<config> menu_data;
+			std::vector<std::string> option_ids;
 
-				break;
-			}
+			for(const config& choice : option.child_range("option")) {
+				config menu_item;
+				menu_item["label"] = choice["name"];
 
-			case ADVANCED_PREF_TYPE::COMBO: {
-				std::vector<config> menu_data;
-				std::vector<std::string> option_ids;
-
-				for(const config& choice : option.child_range("option")) {
-					config menu_item;
-					menu_item["label"] = choice["name"];
-					if(choice.has_attribute("description")) {
-						menu_item["details"] = std::string("<span color='#777'>") + choice["description"] + "</span>";
-					}
-					menu_data.push_back(menu_item);
-					option_ids.push_back(choice["id"]);
+				if(choice.has_attribute("description")) {
+					menu_item["details"] = std::string("<span color='#777'>") + choice["description"] + "</span>";
 				}
 
-				// Attempt to find an initial selection
-				int selected = std::distance(option_ids.begin(), std::find(option_ids.begin(), option_ids.end(),
-					get(pref_name, option["default"].str())
-				));
+				menu_data.push_back(menu_item);
+				option_ids.push_back(choice["id"]);
+			}
 
-				// If the saved option value was invalid, reset selection to 0.
-				if(selected < 0 || selected >= static_cast<int>(option_ids.size())) {
-					selected = 0;
+			// Attempt to find an initial selection
+			int selected = std::distance(option_ids.begin(), std::find(option_ids.begin(), option_ids.end(),
+				get(pref_name, option["default"].str())
+			));
+
+			// If the saved option value was invalid, reset selection to 0.
+			if(selected < 0 || selected >= static_cast<int>(option_ids.size())) {
+				selected = 0;
+			}
+
+			// Build new widget
+			config w_data { "menu_button", config { "id", "setter" }};
+
+			details_grid.swap_child("setter", create_widget_builder(w_data)->build(), true);
+			auto& menu = find_widget<menu_button>(&details_grid, "setter", false);
+
+			menu.set_use_markup(true);
+			menu.set_values(menu_data, selected);
+
+			// We need to bind a lambda here since preferences::set is overloaded.
+			// A lambda alone would be more verbose because it'd need to specify all the parameters.
+			connect_signal_notify_modified(menu,
+				std::bind([=](widget& w) { set(pref_name, option_ids[dynamic_cast<menu_button&>(w).get_value()]); }, _1));
+
+			gui2::bind_status_label<menu_button>(main_grid, "setter", [](menu_button& m)->std::string {
+				return m.get_value_string();
+			}, "value");
+
+			break;
+		}
+
+		case ADVANCED_PREF_TYPE::SPECIAL: {
+			//main_grid->remove_child("setter");
+
+			config w_data {
+				"image", config {
+					"id", "value",
+					"label", "icons/arrows/arrows_blank_right_25.png~CROP(3,3,18,18)",
 				}
+			};
 
-				menu_button* setter_widget = build_single_widget_instance<menu_button>("menu_button");
-				setter_widget->set_id("setter");
-
-				details_grid.swap_child("setter", setter_widget, true);
-
-				menu_button& menu = find_widget<menu_button>(&details_grid, "setter", false);
-
-				menu.set_use_markup(true);
-				menu.set_values(menu_data, selected);
-
-				// We need to bind a lambda here since preferences::set is overloaded.
-				// A lambda alone would be more verbose because it'd need to specify all the parameters.
-				connect_signal_notify_modified(menu,
-					std::bind([=](widget& w) { set(pref_name, option_ids[dynamic_cast<menu_button&>(w).get_value()]); }, _1));
-
-				gui2::bind_status_label<menu_button>(main_grid, "setter", [](menu_button& m)->std::string {
-					return m.get_value_string();
-				}, "value");
-
-				break;
-			}
-
-			case ADVANCED_PREF_TYPE::SPECIAL: {
-				//main_grid->remove_child("setter");
-
-				image* value_widget = build_single_widget_instance<image>("image");
-				value_widget->set_label("icons/arrows/arrows_blank_right_25.png~CROP(3,3,18,18)");
-
-				main_grid->swap_child("value", value_widget, true);
-
-				break;
-			}
+			main_grid->swap_child("value", create_widget_builder(w_data)->build(), true);
+			break;
+		}
 		}
 	}
 

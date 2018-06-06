@@ -193,7 +193,7 @@ public:
 		grid_.set_rows_cols(rows, cols);
 	}
 
-	void set_child(widget* widget,
+	void set_child(widget_ptr_t& widget,
 				   const unsigned row,
 				   const unsigned col,
 				   const unsigned flags,

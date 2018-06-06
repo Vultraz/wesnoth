@@ -42,7 +42,7 @@ private:
 			  const builder_widget::replacements_map& replacements);
 
 public:
-	static viewport* build(const implementation::builder_viewport& builder,
+	static std::shared_ptr<viewport> build(const implementation::builder_viewport& builder,
 							const builder_widget::replacements_map& replacements);
 
 	~viewport();
@@ -100,9 +100,9 @@ struct builder_viewport : public builder_widget
 {
 	explicit builder_viewport(const config& cfg);
 
-	widget* build() const;
+	virtual widget_ptr_t build() const override;
 
-	widget* build(const replacements_map& replacements) const;
+	virtual widget_ptr_t build(const replacements_map& replacements) const override;
 
 	builder_widget_ptr widget_;
 };
